@@ -27,7 +27,18 @@ export default function StreamPage() {
         {/* RESPONSIVE NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_stream}</Link>
+          
+          {/* EPICSTORY TAB (Active + Icon) */}
+          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition flex items-center gap-2">
+            {/* Using standard img tag to force load */}
+            <img 
+              src="/twitch.png" 
+              alt="Twitch" 
+              className="w-5 h-5 md:w-6 md:h-6 object-contain" 
+            />
+            {t.nav_stream}
+          </Link>
+          
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
@@ -71,7 +82,7 @@ export default function StreamPage() {
               return (
                 <div key={channel} className="glass rounded-lg overflow-hidden relative group">
                   
-                  {/* Aspect Ratio Container */}
+                  {/* Small Player */}
                   <div className="aspect-video relative bg-black">
                     <iframe
                       src={`https://player.twitch.tv/?channel=${channel}&parent=localhost&parent=eurovision-odds.vercel.app&muted=true`}

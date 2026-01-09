@@ -4,6 +4,7 @@ import { createClient } from '@/app/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 // ⚠️ YOUR ADMIN ID
@@ -57,29 +58,30 @@ export default function CalendarPage() {
     <div className="min-h-screen p-2 md:p-8">
       <div className="max-w-6xl mx-auto">
         
-        {/* RESPONSIVE NAV */}
+        {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_stream}</Link>
+          
+          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2">
+            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6" />
+            {t.nav_stream}
+          </Link>
+          
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
-          
           <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
         </div>
         <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
 
-        {/* CALENDAR CONTROLS */}
         <div className="flex justify-between items-center mb-4 md:mb-6">
           <button onClick={() => changeMonth(-1)} className="glass hover:bg-white/10 px-3 py-1 md:px-4 md:py-2 rounded font-bold capitalize text-sm md:text-base">{t.prev}</button>
           <h2 className="text-2xl md:text-3xl font-bold capitalize text-white drop-shadow-md">{monthName} {year}</h2>
           <button onClick={() => changeMonth(1)} className="glass hover:bg-white/10 px-3 py-1 md:px-4 md:py-2 rounded font-bold capitalize text-sm md:text-base">{t.next}</button>
         </div>
 
-        {/* SCROLLABLE GRID CONTAINER FOR MOBILE */}
         <div className="overflow-x-auto pb-4">
-          <div className="min-w-[600px] md:min-w-0"> {/* Forces grid to be wide enough on mobile */}
-            
+          <div className="min-w-[600px] md:min-w-0">
             <div className="grid grid-cols-7 gap-2 mb-2 text-center text-gray-400 font-bold uppercase tracking-wider text-xs md:text-sm">
               {lang === 'en' ? 
                 <><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div></> :
@@ -95,7 +97,6 @@ export default function CalendarPage() {
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const dayNum = i + 1
                 const isToday = dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-                
                 const daysEvents = events.filter(e => {
                   const eDate = new Date(e.date)
                   return eDate.getDate() === dayNum && eDate.getMonth() === month && eDate.getFullYear() === year
@@ -104,31 +105,22 @@ export default function CalendarPage() {
                 return (
                   <div key={dayNum} className={`glass h-24 md:h-32 rounded-lg p-1 md:p-2 relative ${isToday ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}>
                     <span className={`text-xs md:text-sm font-bold ${isToday ? 'text-pink-400' : 'text-gray-500'}`}>{dayNum}</span>
-                    
                     <div className="flex flex-wrap gap-1 mt-1 justify-center">
                       {daysEvents.map(event => (
                         <div key={event.id} className="group relative">
-                          
-                          {/* DELETE BTN */}
                           {user?.id === ADMIN_ID && (
                             <button 
                               onClick={(e) => { e.preventDefault(); handleDeleteEvent(event.id, event.title); }}
                               className="absolute -top-3 -right-3 z-30 bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition"
                             >✕</button>
                           )}
-
-                          {/* HEART */}
                           <a 
-                            href={event.link || '#'} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                            href={event.link || '#'} target="_blank" rel="noopener noreferrer"
                             className={`block w-6 h-6 md:w-8 md:h-8 transition transform group-hover:scale-110 ${event.link ? 'cursor-pointer' : 'cursor-default'}`}
                             onClick={(e) => !event.link && e.preventDefault()}
                           >
                             <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(https://flagcdn.com/w80/${event.country_code.toLowerCase()}.png)`, clipPath: heartPath, backgroundColor: 'white' }}></div>
                           </a>
-
-                          {/* TOOLTIP */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 md:w-48 bg-black/90 p-2 md:p-3 rounded-lg border border-purple-500 text-[10px] md:text-xs shadow-xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-20">
                             <div className="font-bold text-white mb-1">{event.title}</div>
                             <div className="text-gray-300">{event.description}</div>
@@ -143,7 +135,6 @@ export default function CalendarPage() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )

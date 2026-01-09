@@ -39,34 +39,6 @@ export default function PredictionsPage() {
     init()
   }, [])
 
-  // --- NEW: REAL-TIME SECURITY LOCK ---
-  // This listens for the Admin locking the event while the user is staring at the page.
-  useEffect(() => {
-    if (!selectedFinal) return
-
-    const channel = supabase
-      .channel('final_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'national_finals',
-          filter: `id=eq.${selectedFinal.id}`,
-        },
-        (payload) => {
-          // Instantly update the local state to match the database
-          console.log("Event status changed:", payload.new)
-          setSelectedFinal(payload.new)
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [selectedFinal?.id, supabase])
-
   async function fetchFinals() {
     const { data } = await supabase.from('national_finals').select('*').order('created_at', { ascending: false })
     if (data) setFinals(data)
@@ -112,7 +84,6 @@ export default function PredictionsPage() {
     setLoading(false)
   }
 
-  // --- LOGIC: Score Calculation ---
   const loadPredictors = async (finalId: number) => {
     setLoading(true)
     const { data: results } = await supabase.from('final_participants').select('id, actual_rank').eq('final_id', finalId)
@@ -143,7 +114,6 @@ export default function PredictionsPage() {
       const list = Array.from(userMap.values())
       if (hasResults) {
         list.sort((a: any, b: any) => b.score - a.score)
-        // Shared Rank Logic
         let currentRank = 1
         for (let i = 0; i < list.length; i++) {
             if (i > 0 && list[i].score === list[i-1].score) {
@@ -173,25 +143,17 @@ export default function PredictionsPage() {
   const savePrediction = async () => {
     if (!user || !selectedFinal) return
     setLoading(true)
-
-    // --- SECURITY CHECK: Double check if event is locked in DB ---
-    // Even if the UI hasn't updated yet, this will catch the cheater.
     if (user.id !== ADMIN_ID) {
-      const { data: currentStatus } = await supabase
-        .from('national_finals')
-        .select('is_open')
-        .eq('id', selectedFinal.id)
-        .single()
-      
+      const { data: currentStatus } = await supabase.from('national_finals').select('is_open').eq('id', selectedFinal.id).single()
       if (!currentStatus?.is_open) {
-        alert("⛔ VOTING CLOSED! The event has been locked.")
-        setLoading(false)
-        // Force update local state
-        setSelectedFinal({ ...selectedFinal, is_open: false })
-        return
+        alert("⛔ VOTING CLOSED!")
+        setLoading(false); setSelectedFinal({ ...selectedFinal, is_open: false }); return
       }
     }
-    // -----------------------------------------------------------
+    const channel = supabase.channel('final_lock')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'national_finals', filter: `id=eq.${selectedFinal.id}` }, (payload) => {
+        setSelectedFinal(payload.new)
+      }).subscribe()
 
     await supabase.from('user_rankings').delete().eq('user_id', user.id).eq('final_id', selectedFinal.id)
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture
@@ -199,6 +161,7 @@ export default function PredictionsPage() {
     const { error } = await supabase.from('user_rankings').insert(rows)
     if (!error) setSaved(true)
     setLoading(false)
+    supabase.removeChannel(channel)
   }
 
   const handleDeleteFinal = async (e: React.MouseEvent, id: number, name: string) => {
@@ -245,7 +208,7 @@ export default function PredictionsPage() {
               {finals.map(final => {
                 const isAdmin = user?.id === ADMIN_ID; const canEnter = final.is_open || isAdmin 
                 return (
-                  <div key={final.id} onClick={() => canEnter && openGame(final)} className={`relative glass p-4 md:p-6 rounded-xl transition flex items-center gap-4 group ${canEnter ? 'hover:bg-white/5 cursor-pointer border border-white/10 hover:border-pink-500' : 'opacity-60 cursor-not-allowed border border-white/5'}`}>
+                  <div key={final.id} onClick={() => canEnter && openGame(final)} className={`relative glass p-4 md:p-6 rounded-xl transition flex items-center gap-4 group shadow-lg ${canEnter ? 'hover:bg-white/5 cursor-pointer border border-white/10 hover:border-pink-500' : 'opacity-60 cursor-not-allowed border border-white/5'}`}>
                     <img src={`https://flagcdn.com/w80/${final.country_code.toLowerCase()}.png`} className="w-12 h-8 rounded object-cover shadow-sm" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -276,8 +239,6 @@ export default function PredictionsPage() {
                 <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold text-sm">{t.change_final}</button>
                 {user?.id === ADMIN_ID && <button onClick={() => setGradingMode(!gradingMode)} className={`ml-4 text-xs px-2 py-1 rounded font-bold border ${gradingMode ? 'bg-yellow-600 text-black border-yellow-500' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>{gradingMode ? t.admin_grading_on : t.admin_grading}</button>}
               </div>
-              
-              {/* SAVE BUTTON: Hidden if locked (unless Admin) */}
               {!gradingMode && (selectedFinal?.is_open || user?.id === ADMIN_ID) ? (
                 <button onClick={savePrediction} disabled={loading || saved} className={`px-4 py-2 md:px-6 rounded-lg font-bold transition shadow-lg text-sm md:text-base ${saved ? 'bg-green-600 text-white' : 'bg-pink-600 hover:bg-pink-500 text-white'}`}>{loading ? t.saving : saved ? t.saved : t.save}</button>
               ) : (
@@ -294,7 +255,6 @@ export default function PredictionsPage() {
                     <input type="number" value={p.actual_rank || ''} onChange={(e) => handleUpdateResult(p.id, e.target.value)} className="w-10 bg-gray-700 text-center text-white rounded border border-gray-600 focus:border-yellow-500 outline-none" />
                   ) : (
                     <div className="flex flex-col gap-1">
-                      {/* Controls disabled if locked (unless Admin) */}
                       <button onClick={() => move(index, -1)} className="text-green-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={(!selectedFinal?.is_open && user?.id !== ADMIN_ID)}>▲</button>
                       <button onClick={() => move(index, 1)} className="text-red-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={(!selectedFinal?.is_open && user?.id !== ADMIN_ID)}>▼</button>
                     </div>
@@ -315,7 +275,7 @@ export default function PredictionsPage() {
             {loading ? <p>{t.loading}</p> : (
               <div className="grid grid-cols-1 gap-3">
                 {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {
-                  const rank = p.displayRank || idx + 1 // Use shared rank
+                  const rank = p.displayRank || idx + 1
                   let cardStyle = "glass border-white/10 hover:border-pink-500"
                   let rankDisplay = <span className="font-mono text-gray-500 font-bold w-8 text-center">{rank}.</span>
 
@@ -359,7 +319,7 @@ export default function PredictionsPage() {
                 let statusIcon = null
                 if (actualRank) {
                   if (actualRank === userRank) { cardClass = "bg-green-600/20 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] opacity-100"; statusIcon = <span className="text-green-400 font-bold drop-shadow-md">{t.exact}</span> }
-                  else if (Math.abs(actualRank - userRank) === 1) { cardClass = "bg-orange-600/20 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] opacity-100"; statusIcon = <span className="text-orange-400 font-bold text-xs">{t.close} ({t.actual} {actualRank})</span> }
+                  else if (Math.abs(actualRank - userRank) === 1) { cardClass = "bg-orange-600/20 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] opacity-100"; statusIcon = <span className="text-orange-400 font-bold text-xs">{t.status_close} ({t.actual} {actualRank})</span> }
                   else { cardClass = "bg-red-900/20 border-red-800 opacity-60"; statusIcon = <span className="text-red-500 text-xs">{t.wrong} ({t.actual} {actualRank})</span> }
                 }
                 return (

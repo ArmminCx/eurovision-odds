@@ -4,12 +4,108 @@ import { createClient } from '@/app/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 // ⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 
-// --- VIDEO PLAYER (Mobile Optimized) ---
+// --- CMS RULES MODAL ---
+function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: User | null }) {
+  const supabase = createClient()
+  const [isEditing, setIsEditing] = useState(false)
+  
+  // State for all 4 text blocks
+  const [bettingText, setBettingText] = useState(t.help_betting_desc)
+  const [predictText, setPredictText] = useState(t.help_predict_desc)
+  const [calendarText, setCalendarText] = useState(t.help_calendar_desc)
+  const [leaderboardText, setLeaderboardText] = useState(t.help_leaderboard_desc)
+  
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadContent() {
+      const { data } = await supabase.from('site_content').select('*')
+      if (data) {
+        const bet = data.find(r => r.key === 'rules_betting')
+        const pred = data.find(r => r.key === 'rules_prediction')
+        const cal = data.find(r => r.key === 'rules_calendar')
+        const lead = data.find(r => r.key === 'rules_leaderboard')
+        
+        if (bet) setBettingText(bet.content)
+        if (pred) setPredictText(pred.content)
+        if (cal) setCalendarText(cal.content)
+        if (lead) setLeaderboardText(lead.content)
+      }
+      setLoading(false)
+    }
+    loadContent()
+  }, [])
+
+  const handleSave = async () => {
+    await supabase.from('site_content').upsert({ key: 'rules_betting', content: bettingText })
+    await supabase.from('site_content').upsert({ key: 'rules_prediction', content: predictText })
+    await supabase.from('site_content').upsert({ key: 'rules_calendar', content: calendarText })
+    await supabase.from('site_content').upsert({ key: 'rules_leaderboard', content: leaderboardText })
+    setIsEditing(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="glass w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 rounded-2xl border border-white/20 relative no-scrollbar" onClick={(e) => e.stopPropagation()}>
+        
+        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 sticky top-0 bg-black/80 backdrop-blur-md z-10 -mx-6 px-6 -mt-2 py-2">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">{t.help_title}</h2>
+            {user?.id === ADMIN_ID && (
+              <button 
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                className={`text-xs px-2 py-1 rounded border font-bold transition ${isEditing ? 'bg-green-600 border-green-500 text-white' : 'bg-white/10 border-white/20 text-gray-400 hover:text-white'}`}
+              >
+                {isEditing ? '💾 Save' : '✏️ Edit'}
+              </button>
+            )}
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition">✕</button>
+        </div>
+
+        <div className="space-y-8 text-gray-200">
+          
+          {/* 1. Betting */}
+          <div>
+            <h3 className="text-lg font-bold text-yellow-400 mb-2">{t.help_betting_title}</h3>
+            {isEditing ? <textarea value={bettingText} onChange={(e) => setBettingText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : bettingText}</p>}
+          </div>
+
+          {/* 2. Predictions */}
+          <div>
+            <h3 className="text-lg font-bold text-purple-400 mb-2">{t.help_predict_title}</h3>
+            {isEditing ? <textarea value={predictText} onChange={(e) => setPredictText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : predictText}</p>}
+          </div>
+
+          {/* 3. Calendar (NEW) */}
+          <div>
+            <h3 className="text-lg font-bold text-blue-400 mb-2">{t.help_calendar_title}</h3>
+            {isEditing ? <textarea value={calendarText} onChange={(e) => setCalendarText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : calendarText}</p>}
+          </div>
+
+          {/* 4. Leaderboard (NEW) */}
+          <div>
+            <h3 className="text-lg font-bold text-orange-400 mb-2">{t.help_leaderboard_title}</h3>
+            {isEditing ? <textarea value={leaderboardText} onChange={(e) => setLeaderboardText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : leaderboardText}</p>}
+          </div>
+
+        </div>
+
+        <button onClick={onClose} className="w-full mt-8 bg-white/10 hover:bg-white/20 py-3 rounded-lg font-bold transition">
+          {t.close_modal}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// --- VIDEO PLAYER ---
 function VideoPlayer({ videoId, onClose }: { videoId: string, onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 md:p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
@@ -48,24 +144,40 @@ export default function Home() {
   
   const [isVoting, setIsVoting] = useState(false)
   const [playingVideo, setPlayingVideo] = useState<string | null>(null)
+  const [showRules, setShowRules] = useState(false)
+  const [onlineCount, setOnlineCount] = useState(1)
+  
   const MAX_TOKENS = 5
 
+  // --- 1. REAL-TIME ONLINE COUNTER ---
+  useEffect(() => {
+    const channel = supabase.channel('global_presence')
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const newState = channel.presenceState()
+        setOnlineCount(Object.keys(newState).length)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() })
+        }
+      })
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // --- 2. DATA REFRESH ---
   async function refreshData() {
     const { data: cList } = await supabase.from('countries').select('*').order('name')
     if (cList) setCountries(cList)
-    
     const { data: vList } = await supabase.from('votes').select('*')
     if (vList) setAllVotes(vList)
-
     const { data: rList } = await supabase.from('ratings').select('*')
     if (rList) setAllRatings(rList)
-
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       setUser(user)
       const { data: mvList } = await supabase.from('votes').select('*').eq('user_id', user.id)
       if (mvList) setMyVotes(mvList)
-      
       const { data: mrList } = await supabase.from('ratings').select('*').eq('user_id', user.id)
       if (mrList) setMyRatings(mrList)
     }
@@ -161,50 +273,85 @@ export default function Home() {
     return (
       <div className="min-h-screen p-2 md:p-8">
         
-        {/* --- FIXED VIDEO PLAYER --- */}
-        {playingVideo && (
-          <VideoPlayer videoId={playingVideo} onClose={() => setPlayingVideo(null)} />
-        )}
+        {/* MODALS */}
+        {playingVideo && <VideoPlayer videoId={playingVideo} onClose={() => setPlayingVideo(null)} />}
+        {showRules && <RulesModal onClose={() => setShowRules(false)} t={t} user={user} />}
         
         <div className="max-w-6xl mx-auto">
           
-          {/* RESPONSIVE NAV: Scrolls on mobile, Flex on desktop */}
-          <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
-            <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-white border-b-2 border-pink-500 font-bold text-sm md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
-            <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_stream}</Link>
-            <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
-            <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
-            <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+          {/* NAV WITH LANGUAGE TOGGLE */}
+          <div className="relative flex justify-center gap-4 md:gap-6 mb-8 border-b border-white/20 pb-4 flex-wrap">
+            <Link href="/" className="px-4 py-2 text-white border-b-2 border-pink-500 font-bold text-lg md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
             
-            <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">
-              {lang === 'en' ? '🇺🇸' : '🇷🇺'}
-            </button>
+            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
+                <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
+                {t.nav_stream}
+            </Link>
+
+            <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
+            <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
+            <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+            
+            {/* RIGHT SIDE CONTROLS */}
+            <div className="absolute right-0 top-0 flex items-center gap-2">
+                <button 
+                    onClick={() => setShowRules(true)}
+                    className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition"
+                    title="How to Play"
+                >
+                    ?
+                </button>
+                <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">
+                    {lang === 'en' ? '🇺🇸' : '🇷🇺'}
+                </button>
+            </div>
           </div>
-          {/* Mobile Language Toggle */}
-          <div className="md:hidden flex justify-end mb-4">
-             <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸 English' : '🇷🇺 Русский'}</button>
+          <div className="md:hidden flex justify-end mb-4 gap-2">
+                <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300">?</button>
+                <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
           </div>
 
-          {/* HEADER: Stack on mobile */}
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-8 border-b border-white/20 pb-4 sticky top-0 bg-black/60 backdrop-blur-lg z-20 py-2 md:py-4 rounded-xl px-4">
-            <div className="text-center md:text-left mb-2 md:mb-0">
-              <h1 className="text-2xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Market</h1>
-              <p className="text-gray-300 text-xs md:text-sm">{t.user}: <span className="font-bold text-white">{user.user_metadata.full_name}</span></p>
+          {/* HEADER with MASSIVE CENTER LOGO */}
+          <div className="relative flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 border-b border-white/20 pb-6 sticky top-0 bg-black/70 backdrop-blur-xl z-20 py-4 md:py-6 rounded-2xl px-6 min-h-[140px] shadow-2xl">
+            
+            {/* LEFT SIDE: Live Count & User */}
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto mb-4 md:mb-0 z-10">
+              <div className="glass px-4 py-1.5 rounded-full flex items-center gap-2 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,1)]"></div>
+                <span className="text-sm font-bold text-green-300 font-mono">{onlineCount} Online</span>
+              </div>
+              <p className="text-gray-300 text-sm font-bold text-white hidden md:block">{user.user_metadata.full_name}</p>
             </div>
-            <div className="flex items-center gap-4 md:gap-6">
+
+            {/* CENTER: LOGO */}
+            <div className="order-first md:absolute md:left-1/2 md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 mb-4 md:mb-0 z-0 pointer-events-none">
+                <Image 
+                    src="/logo.png" 
+                    alt="Eurovision" 
+                    width={600}
+                    height={300}
+                    className="h-24 md:h-40 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] filter brightness-110"
+                    priority
+                />
+            </div>
+
+            {/* RIGHT SIDE: Admin, Logout, Tokens */}
+            <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-end z-10">
               {user.id === ADMIN_ID && (
                 <Link href="/admin">
-                  <button className="glass px-3 py-1 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold transition hover:bg-white/20 flex items-center gap-2">{t.admin_panel}</button>
+                  <button className="glass px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-white/20 flex items-center gap-2 shadow-lg">{t.admin_panel}</button>
                 </Link>
               )}
-              <div className="text-right pl-4 border-l border-white/20">
-                <div className={`text-2xl md:text-4xl font-mono font-bold ${tokensLeft === 0 ? 'text-gray-500' : 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]'}`}>{tokensLeft} / 5</div>
-                <div className="text-[10px] md:text-xs text-gray-300 uppercase tracking-widest">{t.tokens_left}</div>
+              <button onClick={handleLogout} className="text-red-400 hover:text-red-300 text-sm font-bold underline transition hover:scale-105">{t.logout}</button>
+              
+              <div className="text-right pl-6 border-l border-white/20">
+                <div className={`text-3xl md:text-5xl font-mono font-bold ${tokensLeft === 0 ? 'text-gray-500' : 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]'}`}>{tokensLeft} / 5</div>
+                <div className="text-xs text-gray-300 uppercase tracking-widest font-bold">{t.tokens_left}</div>
               </div>
             </div>
           </div>
 
-          {/* GRID: 1 Column on Mobile, 3 on Desktop */}
+          {/* GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {sortedCountries.map((country, index) => {
               const myVotesForThis = myVotes.filter(v => v.country_id === country.id).length
@@ -286,6 +433,14 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center text-white p-4">
       <div className="glass p-8 md:p-12 rounded-2xl text-center shadow-[0_0_50px_rgba(255,0,85,0.2)] max-w-md w-full">
+        <Image 
+            src="/logo.png" 
+            alt="Eurovision" 
+            width={300}
+            height={150}
+            className="w-48 md:w-64 mx-auto mb-6 drop-shadow-2xl"
+            priority
+        />
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Odds</h1>
         <p className="text-lg md:text-xl mb-8 text-gray-200">Community Driven Predictions</p>
         <button onClick={handleLogin} className="bg-[#6441A5] hover:bg-[#7d5bbe] text-white px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold flex items-center gap-3 transition transform hover:scale-105 shadow-lg mx-auto w-full justify-center">

@@ -2,7 +2,7 @@ export const translations = {
   en: {
     // Navigation
     nav_betting: "🏠 Betting",
-    nav_stream: "📺 Epicstory",
+    nav_stream: "Epicstory",
     nav_calendar: "📅 Calendar",
     nav_predict: "🔮 Predictions",
     nav_leaderboard: "🏆 Leaderboard",
@@ -59,7 +59,7 @@ export const translations = {
     score: "Score:",
     prediction_by: "Prediction by",
     exact: "✓ Exact",
-    close: "Close",
+    status_close: "Close",
     wrong: "Wrong",
     actual: "Actual:",
 
@@ -70,12 +70,24 @@ export const translations = {
     events: "Events",
     points: "Points",
     loading_scores: "Loading scores...",
-    no_scores: "No points scored yet! Wait for results."
+    no_scores: "No points scored yet! Wait for results.",
+
+    // Help Modal (EXTENDED)
+    help_title: "How to Play",
+    help_betting_title: "💰 The Betting Market",
+    help_betting_desc: "You start with 5 Tokens. Place them on countries you think will win Eurovision. The more people bet on a country, the lower the Odds (payout) become. If you change your mind, remove your vote to get the token back.",
+    help_predict_title: "🔮 Predictions Game",
+    help_predict_desc: "Go to the Predictions tab to rank the songs in National Finals. You get 3 Points for an exact placement match, and 1 Point if you are off by just one position.",
+    help_calendar_title: "📅 Calendar",
+    help_calendar_desc: "Track all National Finals and events. Click the heart icons on the calendar to see details or watch links for that specific event.",
+    help_leaderboard_title: "🏆 Season Leaderboard",
+    help_leaderboard_desc: "Compete against the community! Points from all prediction games are summed up here to decide the ultimate Eurovision Expert.",
+    close_modal: "Close"
   },
   ru: {
     // Navigation
     nav_betting: "🏠 Ставки",
-    nav_stream: "📺 Эпикстори",
+    nav_stream: "Эпикстори",
     nav_calendar: "📅 Календарь",
     nav_predict: "🔮 Прогнозы",
     nav_leaderboard: "🏆 Таблица",
@@ -132,7 +144,7 @@ export const translations = {
     score: "Очки:",
     prediction_by: "Прогноз от",
     exact: "✓ Точно",
-    close: "Близко",
+    status_close: "Близко",
     wrong: "Мимо",
     actual: "Факт:",
 
@@ -143,6 +155,18 @@ export const translations = {
     events: "Турниры",
     points: "Очки",
     loading_scores: "Загрузка очков...",
-    no_scores: "Пока нет очков! Ждем результатов."
+    no_scores: "Пока нет очков! Ждем результатов.",
+
+    // Help Modal (EXTENDED)
+    help_title: "Как играть",
+    help_betting_title: "💰 Рынок Ставок",
+    help_betting_desc: "У вас 5 жетонов. Ставьте их на страны, которые, по вашему мнению, выиграют. Чем больше ставок на страну, тем ниже коэффициенты. Вы можете снять ставку, чтобы вернуть жетон.",
+    help_predict_title: "🔮 Игра Прогнозов",
+    help_predict_desc: "В вкладке Прогнозы расставьте участников. Вы получаете 3 очка за точное совпадение и 1 очко, если ошиблись всего на одну позицию.",
+    help_calendar_title: "📅 Календарь",
+    help_calendar_desc: "Следите за всеми нацотборами. Нажимайте на сердечки в календаре, чтобы увидеть детали или ссылки на трансляции.",
+    help_leaderboard_title: "🏆 Таблица Лидеров",
+    help_leaderboard_desc: "Соревнуйтесь с сообществом! Очки за все прогнозы суммируются здесь, чтобы определить главного эксперта Евровидения.",
+    close_modal: "Закрыть"
   }
 }
