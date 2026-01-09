@@ -6,6 +6,7 @@ import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
+import confetti from 'canvas-confetti' // IMPORT ADDED HERE
 
 // ⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
@@ -14,13 +15,8 @@ const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: User | null }) {
   const supabase = createClient()
   const [isEditing, setIsEditing] = useState(false)
-  
-  // State for all 4 text blocks
   const [bettingText, setBettingText] = useState(t.help_betting_desc)
   const [predictText, setPredictText] = useState(t.help_predict_desc)
-  const [calendarText, setCalendarText] = useState(t.help_calendar_desc)
-  const [leaderboardText, setLeaderboardText] = useState(t.help_leaderboard_desc)
-  
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -29,13 +25,8 @@ function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: U
       if (data) {
         const bet = data.find(r => r.key === 'rules_betting')
         const pred = data.find(r => r.key === 'rules_prediction')
-        const cal = data.find(r => r.key === 'rules_calendar')
-        const lead = data.find(r => r.key === 'rules_leaderboard')
-        
         if (bet) setBettingText(bet.content)
         if (pred) setPredictText(pred.content)
-        if (cal) setCalendarText(cal.content)
-        if (lead) setLeaderboardText(lead.content)
       }
       setLoading(false)
     }
@@ -45,23 +36,18 @@ function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: U
   const handleSave = async () => {
     await supabase.from('site_content').upsert({ key: 'rules_betting', content: bettingText })
     await supabase.from('site_content').upsert({ key: 'rules_prediction', content: predictText })
-    await supabase.from('site_content').upsert({ key: 'rules_calendar', content: calendarText })
-    await supabase.from('site_content').upsert({ key: 'rules_leaderboard', content: leaderboardText })
     setIsEditing(false)
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="glass w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 rounded-2xl border border-white/20 relative no-scrollbar" onClick={(e) => e.stopPropagation()}>
+      <div className="glass w-full max-w-lg p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
         
-        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 sticky top-0 bg-black/80 backdrop-blur-md z-10 -mx-6 px-6 -mt-2 py-2">
+        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">{t.help_title}</h2>
             {user?.id === ADMIN_ID && (
-              <button 
-                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                className={`text-xs px-2 py-1 rounded border font-bold transition ${isEditing ? 'bg-green-600 border-green-500 text-white' : 'bg-white/10 border-white/20 text-gray-400 hover:text-white'}`}
-              >
+              <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className={`text-xs px-2 py-1 rounded border font-bold ${isEditing ? 'bg-green-600 border-green-500 text-white' : 'bg-white/10 border-white/20 text-gray-400 hover:text-white'}`}>
                 {isEditing ? '💾 Save' : '✏️ Edit'}
               </button>
             )}
@@ -69,37 +55,18 @@ function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: U
           <button onClick={onClose} className="text-gray-400 hover:text-white transition">✕</button>
         </div>
 
-        <div className="space-y-8 text-gray-200">
-          
-          {/* 1. Betting */}
+        <div className="space-y-6 text-gray-200">
           <div>
             <h3 className="text-lg font-bold text-yellow-400 mb-2">{t.help_betting_title}</h3>
-            {isEditing ? <textarea value={bettingText} onChange={(e) => setBettingText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : bettingText}</p>}
+            {isEditing ? <textarea value={bettingText} onChange={(e) => setBettingText(e.target.value)} className="w-full h-24 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : bettingText}</p>}
           </div>
-
-          {/* 2. Predictions */}
           <div>
             <h3 className="text-lg font-bold text-purple-400 mb-2">{t.help_predict_title}</h3>
-            {isEditing ? <textarea value={predictText} onChange={(e) => setPredictText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : predictText}</p>}
+            {isEditing ? <textarea value={predictText} onChange={(e) => setPredictText(e.target.value)} className="w-full h-24 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : predictText}</p>}
           </div>
-
-          {/* 3. Calendar (NEW) */}
-          <div>
-            <h3 className="text-lg font-bold text-blue-400 mb-2">{t.help_calendar_title}</h3>
-            {isEditing ? <textarea value={calendarText} onChange={(e) => setCalendarText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : calendarText}</p>}
-          </div>
-
-          {/* 4. Leaderboard (NEW) */}
-          <div>
-            <h3 className="text-lg font-bold text-orange-400 mb-2">{t.help_leaderboard_title}</h3>
-            {isEditing ? <textarea value={leaderboardText} onChange={(e) => setLeaderboardText(e.target.value)} className="w-full h-20 bg-black/50 border border-white/20 rounded p-2 text-sm text-white focus:border-pink-500 outline-none"/> : <p className="text-sm leading-relaxed text-gray-300">{loading ? '...' : leaderboardText}</p>}
-          </div>
-
+          <div className="text-xs text-center text-gray-500 pt-4 border-t border-white/10">{t.help_leaderboard}</div>
         </div>
-
-        <button onClick={onClose} className="w-full mt-8 bg-white/10 hover:bg-white/20 py-3 rounded-lg font-bold transition">
-          {t.close_modal}
-        </button>
+        <button onClick={onClose} className="w-full mt-6 bg-white/10 hover:bg-white/20 py-2 rounded-lg font-bold transition">{t.close_modal}</button>
       </div>
     </div>
   )
@@ -110,19 +77,9 @@ function VideoPlayer({ videoId, onClose }: { videoId: string, onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 md:p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div className="relative w-full max-w-4xl bg-black rounded-xl overflow-hidden shadow-2xl border border-white/20" onClick={(e) => e.stopPropagation()}>
-        <button 
-          onClick={onClose}
-          className="absolute top-2 right-2 z-50 bg-red-600 hover:bg-red-500 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center transition"
-        >
-          ✕
-        </button>
+        <button onClick={onClose} className="absolute top-2 right-2 z-50 bg-red-600 hover:bg-red-500 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center transition">✕</button>
         <div className="aspect-video">
-          <iframe 
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`} 
-            className="w-full h-full" 
-            allow="autoplay; encrypted-media; picture-in-picture" 
-            allowFullScreen
-          ></iframe>
+          <iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1`} className="w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen></iframe>
         </div>
       </div>
     </div>
@@ -149,23 +106,16 @@ export default function Home() {
   
   const MAX_TOKENS = 5
 
-  // --- 1. REAL-TIME ONLINE COUNTER ---
   useEffect(() => {
     const channel = supabase.channel('global_presence')
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const newState = channel.presenceState()
-        setOnlineCount(Object.keys(newState).length)
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ online_at: new Date().toISOString() })
-        }
+    channel.on('presence', { event: 'sync' }, () => {
+        setOnlineCount(Object.keys(channel.presenceState()).length)
+      }).subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') { await channel.track({ online_at: new Date().toISOString() }) }
       })
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  // --- 2. DATA REFRESH ---
   async function refreshData() {
     const { data: cList } = await supabase.from('countries').select('*').order('name')
     if (cList) setCountries(cList)
@@ -194,6 +144,10 @@ export default function Home() {
   const placeVote = async (countryId: number) => {
     if (!user || isVoting || myVotes.length >= MAX_TOKENS) return
     setIsVoting(true)
+    
+    // --- CONFETTI EXPLOSION ---
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#ec4899', '#a855f7', '#fbbf24'] })
+    
     const fakeVote = { id: Math.random(), country_id: countryId, user_id: user.id }
     const prevMy = [...myVotes]; const prevAll = [...allVotes]
     setMyVotes([...myVotes, fakeVote]); setAllVotes([...allVotes, fakeVote])
@@ -272,38 +226,21 @@ export default function Home() {
 
     return (
       <div className="min-h-screen p-2 md:p-8">
-        
-        {/* MODALS */}
         {playingVideo && <VideoPlayer videoId={playingVideo} onClose={() => setPlayingVideo(null)} />}
         {showRules && <RulesModal onClose={() => setShowRules(false)} t={t} user={user} />}
         
         <div className="max-w-6xl mx-auto">
           
-          {/* NAV WITH LANGUAGE TOGGLE */}
+          {/* NAV */}
           <div className="relative flex justify-center gap-4 md:gap-6 mb-8 border-b border-white/20 pb-4 flex-wrap">
             <Link href="/" className="px-4 py-2 text-white border-b-2 border-pink-500 font-bold text-lg md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
-            
-            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
-                <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
-                {t.nav_stream}
-            </Link>
-
+            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
             <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
             <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
             <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
-            
-            {/* RIGHT SIDE CONTROLS */}
             <div className="absolute right-0 top-0 flex items-center gap-2">
-                <button 
-                    onClick={() => setShowRules(true)}
-                    className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition"
-                    title="How to Play"
-                >
-                    ?
-                </button>
-                <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">
-                    {lang === 'en' ? '🇺🇸' : '🇷🇺'}
-                </button>
+                <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition" title="How to Play">?</button>
+                <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
             </div>
           </div>
           <div className="md:hidden flex justify-end mb-4 gap-2">
@@ -311,10 +248,8 @@ export default function Home() {
                 <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
           </div>
 
-          {/* HEADER with MASSIVE CENTER LOGO */}
+          {/* HEADER */}
           <div className="relative flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 border-b border-white/20 pb-6 sticky top-0 bg-black/70 backdrop-blur-xl z-20 py-4 md:py-6 rounded-2xl px-6 min-h-[140px] shadow-2xl">
-            
-            {/* LEFT SIDE: Live Count & User */}
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto mb-4 md:mb-0 z-10">
               <div className="glass px-4 py-1.5 rounded-full flex items-center gap-2 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,1)]"></div>
@@ -322,28 +257,12 @@ export default function Home() {
               </div>
               <p className="text-gray-300 text-sm font-bold text-white hidden md:block">{user.user_metadata.full_name}</p>
             </div>
-
-            {/* CENTER: LOGO */}
             <div className="order-first md:absolute md:left-1/2 md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 mb-4 md:mb-0 z-0 pointer-events-none">
-                <Image 
-                    src="/logo.png" 
-                    alt="Eurovision" 
-                    width={600}
-                    height={300}
-                    className="h-24 md:h-40 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] filter brightness-110"
-                    priority
-                />
+                <Image src="/logo.png" alt="Eurovision" width={600} height={300} className="h-24 md:h-40 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] filter brightness-110" priority />
             </div>
-
-            {/* RIGHT SIDE: Admin, Logout, Tokens */}
             <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-end z-10">
-              {user.id === ADMIN_ID && (
-                <Link href="/admin">
-                  <button className="glass px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-white/20 flex items-center gap-2 shadow-lg">{t.admin_panel}</button>
-                </Link>
-              )}
+              {user.id === ADMIN_ID && <Link href="/admin"><button className="glass px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-white/20 flex items-center gap-2 shadow-lg">{t.admin_panel}</button></Link>}
               <button onClick={handleLogout} className="text-red-400 hover:text-red-300 text-sm font-bold underline transition hover:scale-105">{t.logout}</button>
-              
               <div className="text-right pl-6 border-l border-white/20">
                 <div className={`text-3xl md:text-5xl font-mono font-bold ${tokensLeft === 0 ? 'text-gray-500' : 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]'}`}>{tokensLeft} / 5</div>
                 <div className="text-xs text-gray-300 uppercase tracking-widest font-bold">{t.tokens_left}</div>
@@ -363,60 +282,29 @@ export default function Home() {
               
               return (
                 <div key={country.id} className={`glass rounded-xl overflow-hidden relative group transition-all duration-500 ${isFavorite ? 'border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.4)]' : 'hover:border-pink-500/50'}`}>
-                  {user.id === ADMIN_ID && (
-                    <button onClick={() => handleDeleteCountry(country.id, country.name)} className="absolute top-2 right-2 z-40 bg-red-600/80 hover:bg-red-500 p-2 rounded text-white shadow-lg backdrop-blur">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-                  )}
-
+                  {user.id === ADMIN_ID && <button onClick={() => handleDeleteCountry(country.id, country.name)} className="absolute top-2 right-2 z-40 bg-red-600/80 hover:bg-red-500 p-2 rounded text-white shadow-lg backdrop-blur"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>}
                   <div className="h-24 md:h-32 w-full relative overflow-hidden cursor-pointer" onClick={() => videoId ? setPlayingVideo(videoId) : alert(t.no_video)}>
                      <img src={`https://flagcdn.com/w640/${country.code.toLowerCase()}.png`} alt={country.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500" />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 md:px-3 md:py-1 rounded text-white font-mono font-bold text-xs md:text-base border border-white/10">#{index + 1}</div>
-                     {videoId && (
-                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                         <div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110">
-                           <svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                         </div>
-                       </div>
-                     )}
+                     {videoId && <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300"><div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110"><svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>}
                   </div>
-
                   <div className="p-4 md:p-6 pt-0 relative -top-4 md:-top-6">
                     <div className="flex justify-between items-end mb-2">
                       <div>
                          <h3 className="text-xl md:text-2xl font-bold drop-shadow-md text-white">{country.name}</h3>
                          <p className="text-gray-300 text-xs md:text-sm">{country.artist}</p>
                       </div>
-                      <div className="text-right glass p-1 md:p-2 rounded-lg">
-                        <span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span>
-                        <span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span>
-                      </div>
+                      <div className="text-right glass p-1 md:p-2 rounded-lg"><span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span><span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span></div>
                     </div>
-                    
-                    <p 
-                      className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`}
-                      onClick={() => videoId && setPlayingVideo(videoId)}
-                      title={videoId ? "Click to Watch Video" : t.no_video}
-                    >
-                      <span>♫ {country.song}</span>
-                      {videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}
-                    </p>
-
+                    <p className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`} onClick={() => videoId && setPlayingVideo(videoId)} title={videoId ? "Click to Watch Video" : t.no_video}><span>♫ {country.song}</span>{videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}</p>
                     <div className="bg-black/30 p-2 md:p-3 rounded-lg mb-4 border border-white/5">
-                      <div className="flex justify-between text-xs mb-2">
-                        <span className="text-gray-400">{t.avg}: <b className="text-white">{getAvgScore(country.id)}</b></span>
-                        <span className="text-gray-400">{t.me}: <b className="text-pink-400">{myScore}</b></span>
-                      </div>
+                      <div className="flex justify-between text-xs mb-2"><span className="text-gray-400">{t.avg}: <b className="text-white">{getAvgScore(country.id)}</b></span><span className="text-gray-400">{t.me}: <b className="text-pink-400">{myScore}</b></span></div>
                       <input type="range" min="0" max="10" value={myScore} onChange={(e) => handleRate(country.id, parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
                     </div>
-
                     <div className="flex items-center justify-between gap-3 md:gap-4">
                       <button onClick={() => removeVote(country.id)} disabled={myVotesForThis === 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900/40 text-red-200 hover:bg-red-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(220,38,38,0.3)]">-</button>
-                      <div className="flex-1 text-center bg-black/40 rounded-lg py-1 md:py-2 border border-white/10">
-                        <span className="text-[10px] md:text-xs text-gray-500 block">{t.shares}</span>
-                        <span className="text-xl md:text-2xl font-bold text-white">{myVotesForThis}</span>
-                      </div>
+                      <div className="flex-1 text-center bg-black/40 rounded-lg py-1 md:py-2 border border-white/10"><span className="text-[10px] md:text-xs text-gray-500 block">{t.shares}</span><span className="text-xl md:text-2xl font-bold text-white">{myVotesForThis}</span></div>
                       <button onClick={() => placeVote(country.id)} disabled={tokensLeft === 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-green-900/40 text-green-200 hover:bg-green-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(22,163,74,0.3)]">+</button>
                     </div>
                   </div>
@@ -429,23 +317,13 @@ export default function Home() {
     )
   }
 
-  // LOGGED OUT VIEW
   return (
     <div className="flex min-h-screen flex-col items-center justify-center text-white p-4">
       <div className="glass p-8 md:p-12 rounded-2xl text-center shadow-[0_0_50px_rgba(255,0,85,0.2)] max-w-md w-full">
-        <Image 
-            src="/logo.png" 
-            alt="Eurovision" 
-            width={300}
-            height={150}
-            className="w-48 md:w-64 mx-auto mb-6 drop-shadow-2xl"
-            priority
-        />
+        <Image src="/logo.png" alt="Eurovision" width={300} height={150} className="w-48 md:w-64 mx-auto mb-6 drop-shadow-2xl" priority />
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Odds</h1>
         <p className="text-lg md:text-xl mb-8 text-gray-200">Community Driven Predictions</p>
-        <button onClick={handleLogin} className="bg-[#6441A5] hover:bg-[#7d5bbe] text-white px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold flex items-center gap-3 transition transform hover:scale-105 shadow-lg mx-auto w-full justify-center">
-          {t.login}
-        </button>
+        <button onClick={handleLogin} className="bg-[#6441A5] hover:bg-[#7d5bbe] text-white px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold flex items-center gap-3 transition transform hover:scale-105 shadow-lg mx-auto w-full justify-center">{t.login}</button>
       </div>
     </div>
   )

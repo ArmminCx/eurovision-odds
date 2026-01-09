@@ -3,8 +3,10 @@
 import { createClient } from '@/app/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { User } from '@supabase/supabase-js'
 import { useLanguage } from '@/app/context/LanguageContext'
+import confetti from 'canvas-confetti' // IMPORT ADDED HERE
 
 // ⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
@@ -143,6 +145,7 @@ export default function PredictionsPage() {
   const savePrediction = async () => {
     if (!user || !selectedFinal) return
     setLoading(true)
+
     if (user.id !== ADMIN_ID) {
       const { data: currentStatus } = await supabase.from('national_finals').select('is_open').eq('id', selectedFinal.id).single()
       if (!currentStatus?.is_open) {
@@ -154,6 +157,15 @@ export default function PredictionsPage() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'national_finals', filter: `id=eq.${selectedFinal.id}` }, (payload) => {
         setSelectedFinal(payload.new)
       }).subscribe()
+
+    // --- CONFETTI ANIMATION ---
+    const end = Date.now() + 1000; const colors = ['#ec4899', '#ffffff'];
+    (function frame() {
+        confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
+        confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
+        if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+    // --------------------------
 
     await supabase.from('user_rankings').delete().eq('user_id', user.id).eq('final_id', selectedFinal.id)
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture
@@ -191,7 +203,10 @@ export default function PredictionsPage() {
         {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_stream}</Link>
+          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2">
+            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
+            {t.nav_stream}
+          </Link>
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
