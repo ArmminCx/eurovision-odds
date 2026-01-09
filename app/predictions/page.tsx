@@ -39,6 +39,34 @@ export default function PredictionsPage() {
     init()
   }, [])
 
+  // --- NEW: REAL-TIME SECURITY LOCK ---
+  // This listens for the Admin locking the event while the user is staring at the page.
+  useEffect(() => {
+    if (!selectedFinal) return
+
+    const channel = supabase
+      .channel('final_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'national_finals',
+          filter: `id=eq.${selectedFinal.id}`,
+        },
+        (payload) => {
+          // Instantly update the local state to match the database
+          console.log("Event status changed:", payload.new)
+          setSelectedFinal(payload.new)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [selectedFinal?.id, supabase])
+
   async function fetchFinals() {
     const { data } = await supabase.from('national_finals').select('*').order('created_at', { ascending: false })
     if (data) setFinals(data)
@@ -84,6 +112,7 @@ export default function PredictionsPage() {
     setLoading(false)
   }
 
+  // --- LOGIC: Score Calculation ---
   const loadPredictors = async (finalId: number) => {
     setLoading(true)
     const { data: results } = await supabase.from('final_participants').select('id, actual_rank').eq('final_id', finalId)
@@ -93,7 +122,15 @@ export default function PredictionsPage() {
     if (data) {
       const userMap = new Map()
       data.forEach(row => {
-        if (!userMap.has(row.user_id)) userMap.set(row.user_id, { user_id: row.user_id, username: row.username, avatar_url: row.avatar_url, created_at: row.created_at, score: 0, isRanked: hasResults })
+        if (!userMap.has(row.user_id)) userMap.set(row.user_id, { 
+            user_id: row.user_id, 
+            username: row.username, 
+            avatar_url: row.avatar_url, 
+            created_at: row.created_at, 
+            score: 0, 
+            isRanked: hasResults,
+            displayRank: 0 
+        })
         if (hasResults) {
           const actual = resultMap.get(row.participant_id)
           if (actual) {
@@ -104,8 +141,22 @@ export default function PredictionsPage() {
         }
       })
       const list = Array.from(userMap.values())
-      if (hasResults) list.sort((a, b) => b.score - a.score)
-      else list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      if (hasResults) {
+        list.sort((a: any, b: any) => b.score - a.score)
+        // Shared Rank Logic
+        let currentRank = 1
+        for (let i = 0; i < list.length; i++) {
+            if (i > 0 && list[i].score === list[i-1].score) {
+                list[i].displayRank = list[i-1].displayRank
+            } else {
+                currentRank = i + 1
+                list[i].displayRank = currentRank
+            }
+        }
+      } else {
+        list.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        list.forEach((item: any, i) => item.displayRank = i + 1)
+      }
       setPredictors(list)
     }
     setLoading(false)
@@ -122,6 +173,26 @@ export default function PredictionsPage() {
   const savePrediction = async () => {
     if (!user || !selectedFinal) return
     setLoading(true)
+
+    // --- SECURITY CHECK: Double check if event is locked in DB ---
+    // Even if the UI hasn't updated yet, this will catch the cheater.
+    if (user.id !== ADMIN_ID) {
+      const { data: currentStatus } = await supabase
+        .from('national_finals')
+        .select('is_open')
+        .eq('id', selectedFinal.id)
+        .single()
+      
+      if (!currentStatus?.is_open) {
+        alert("⛔ VOTING CLOSED! The event has been locked.")
+        setLoading(false)
+        // Force update local state
+        setSelectedFinal({ ...selectedFinal, is_open: false })
+        return
+      }
+    }
+    // -----------------------------------------------------------
+
     await supabase.from('user_rankings').delete().eq('user_id', user.id).eq('final_id', selectedFinal.id)
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture
     const rows = participants.map((p, index) => ({ user_id: user.id, final_id: selectedFinal.id, participant_id: p.id, rank_position: index + 1, username: user.user_metadata.full_name, avatar_url: avatar }))
@@ -154,19 +225,18 @@ export default function PredictionsPage() {
     <div className="min-h-screen p-2 md:p-8">
       <div className="max-w-4xl mx-auto">
         
-        {/* RESPONSIVE NAV */}
+        {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
           <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_stream}</Link>
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
-          
           <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
         </div>
         <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
 
-        {/* --- VIEW 1 --- */}
+        {/* VIEW 1: LIST */}
         {view === 'LIST' && (
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">{t.select_final}</h1>
@@ -198,7 +268,7 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* --- VIEW 2 --- */}
+        {/* VIEW 2: GAME */}
         {view === 'GAME' && (
           <div>
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
@@ -206,8 +276,15 @@ export default function PredictionsPage() {
                 <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold text-sm">{t.change_final}</button>
                 {user?.id === ADMIN_ID && <button onClick={() => setGradingMode(!gradingMode)} className={`ml-4 text-xs px-2 py-1 rounded font-bold border ${gradingMode ? 'bg-yellow-600 text-black border-yellow-500' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>{gradingMode ? t.admin_grading_on : t.admin_grading}</button>}
               </div>
-              {!gradingMode && <button onClick={savePrediction} disabled={loading || saved} className={`px-4 py-2 md:px-6 rounded-lg font-bold transition shadow-lg text-sm md:text-base ${saved ? 'bg-green-600 text-white' : 'bg-pink-600 hover:bg-pink-500 text-white'}`}>{loading ? t.saving : saved ? t.saved : t.save}</button>}
+              
+              {/* SAVE BUTTON: Hidden if locked (unless Admin) */}
+              {!gradingMode && (selectedFinal?.is_open || user?.id === ADMIN_ID) ? (
+                <button onClick={savePrediction} disabled={loading || saved} className={`px-4 py-2 md:px-6 rounded-lg font-bold transition shadow-lg text-sm md:text-base ${saved ? 'bg-green-600 text-white' : 'bg-pink-600 hover:bg-pink-500 text-white'}`}>{loading ? t.saving : saved ? t.saved : t.save}</button>
+              ) : (
+                <div className="px-4 py-2 bg-red-900/50 text-red-200 rounded-lg font-bold border border-red-800 flex items-center gap-2">🔒 {t.locked}</div>
+              )}
             </div>
+            
             <div className="space-y-3 pb-20">
               {participants.map((p, index) => (
                 <div key={p.id} className="glass flex items-center gap-4 p-4 rounded-xl border border-white/10 hover:border-pink-500/30 transition">
@@ -217,8 +294,9 @@ export default function PredictionsPage() {
                     <input type="number" value={p.actual_rank || ''} onChange={(e) => handleUpdateResult(p.id, e.target.value)} className="w-10 bg-gray-700 text-center text-white rounded border border-gray-600 focus:border-yellow-500 outline-none" />
                   ) : (
                     <div className="flex flex-col gap-1">
-                      <button onClick={() => move(index, -1)} className="text-green-400 hover:bg-gray-700 p-1 rounded">▲</button>
-                      <button onClick={() => move(index, 1)} className="text-red-400 hover:bg-gray-700 p-1 rounded">▼</button>
+                      {/* Controls disabled if locked (unless Admin) */}
+                      <button onClick={() => move(index, -1)} className="text-green-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={(!selectedFinal?.is_open && user?.id !== ADMIN_ID)}>▲</button>
+                      <button onClick={() => move(index, 1)} className="text-red-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={(!selectedFinal?.is_open && user?.id !== ADMIN_ID)}>▼</button>
                     </div>
                   )}
                 </div>
@@ -227,7 +305,7 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* --- VIEW 3 --- */}
+        {/* VIEW 3: STATS */}
         {view === 'STATS' && (
           <div>
             <div className="flex items-center gap-4 mb-6">
@@ -237,17 +315,20 @@ export default function PredictionsPage() {
             {loading ? <p>{t.loading}</p> : (
               <div className="grid grid-cols-1 gap-3">
                 {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {
+                  const rank = p.displayRank || idx + 1 // Use shared rank
                   let cardStyle = "glass border-white/10 hover:border-pink-500"
+                  let rankDisplay = <span className="font-mono text-gray-500 font-bold w-8 text-center">{rank}.</span>
+
                   if (p.isRanked) {
-                    if (idx === 0) cardStyle = "bg-yellow-900/30 border-yellow-500"
-                    else if (idx === 1) cardStyle = "bg-slate-800 border-slate-400"
-                    else if (idx === 2) cardStyle = "bg-orange-900/30 border-orange-600"
+                    if (rank === 1) { cardStyle = "bg-yellow-900/30 border-yellow-500"; rankDisplay = <span className="text-2xl w-8 text-center">🥇</span> }
+                    else if (rank === 2) { cardStyle = "bg-slate-800 border-slate-400"; rankDisplay = <span className="text-2xl w-8 text-center">🥈</span> }
+                    else if (rank === 3) { cardStyle = "bg-orange-900/30 border-orange-600"; rankDisplay = <span className="text-2xl w-8 text-center">🥉</span> }
                   }
                   return (
                     <div key={p.user_id} onClick={() => openSpectate(p.user_id, p.username)} className={`p-4 rounded-lg flex justify-between items-center cursor-pointer border transition ${cardStyle}`}>
                       <div className="flex items-center gap-4">
-                        {p.isRanked && <span className="font-mono text-gray-500 font-bold w-6">{idx + 1}.</span>}
-                        {p.avatar_url ? <img src={p.avatar_url} className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
+                        {rankDisplay}
+                        {p.avatar_url ? <img src={p.avatar_url} className="w-10 h-10 rounded-full border-2 border-white/10" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
                         <div>
                           <div className="font-bold text-white text-sm md:text-base">{p.username || 'Unknown'}</div>
                           <div className="text-xs text-gray-400">{p.isRanked ? <span className="text-yellow-400 font-bold">{t.score} {p.score} pts</span> : <span>{t.submitted} {new Date(p.created_at).toLocaleDateString()}</span>}</div>
@@ -262,7 +343,7 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* --- VIEW 4 --- */}
+        {/* VIEW 4: SPECTATE */}
         {view === 'SPECTATE' && (
           <div>
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
@@ -274,14 +355,15 @@ export default function PredictionsPage() {
               {spectatorList.map((p, index) => {
                 const userRank = index + 1
                 const actualRank = p.actual_rank
-                let statusColor = "border-white/10"; let statusIcon = null
+                let cardClass = "glass border-white/10 opacity-80"
+                let statusIcon = null
                 if (actualRank) {
-                  if (actualRank === userRank) { statusColor = "border-green-500 bg-green-900/10"; statusIcon = <span className="text-green-400 font-bold">{t.exact}</span> }
-                  else if (Math.abs(actualRank - userRank) === 1) { statusColor = "border-yellow-600 bg-yellow-900/10"; statusIcon = <span className="text-yellow-500 text-xs">{t.close} ({t.actual} {actualRank})</span> }
-                  else { statusColor = "border-red-900/50 opacity-60"; statusIcon = <span className="text-red-500 text-xs">{t.wrong} ({t.actual} {actualRank})</span> }
+                  if (actualRank === userRank) { cardClass = "bg-green-600/20 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] opacity-100"; statusIcon = <span className="text-green-400 font-bold drop-shadow-md">{t.exact}</span> }
+                  else if (Math.abs(actualRank - userRank) === 1) { cardClass = "bg-orange-600/20 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] opacity-100"; statusIcon = <span className="text-orange-400 font-bold text-xs">{t.close} ({t.actual} {actualRank})</span> }
+                  else { cardClass = "bg-red-900/20 border-red-800 opacity-60"; statusIcon = <span className="text-red-500 text-xs">{t.wrong} ({t.actual} {actualRank})</span> }
                 }
                 return (
-                  <div key={p.id} className={`glass flex items-center gap-4 p-4 rounded-xl border-l-4 ${statusColor} shadow-md`}>
+                  <div key={p.id} className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${cardClass}`}>
                     <div className="w-8 h-8 flex items-center justify-center font-bold text-xl text-white/50">{userRank}</div>
                     <div className="flex-1 font-bold text-sm md:text-lg">{p.artist} <span className="font-normal text-gray-400 block md:inline md:ml-2 text-xs md:text-sm">{p.song}</span></div>
                     <div>{statusIcon}</div>
