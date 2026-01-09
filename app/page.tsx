@@ -9,10 +9,10 @@ import { useLanguage } from '@/app/context/LanguageContext'
 // ⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 
-// --- VIDEO PLAYER (Glass Style) ---
+// --- VIDEO PLAYER (Mobile Optimized) ---
 function VideoPlayer({ videoId, onClose }: { videoId: string, onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 md:p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div className="relative w-full max-w-4xl bg-black rounded-xl overflow-hidden shadow-2xl border border-white/20" onClick={(e) => e.stopPropagation()}>
         <button 
           onClick={onClose}
@@ -159,7 +159,7 @@ export default function Home() {
     const sortedCountries = [...countries].sort((a, b) => getOddsValue(a.id) - getOddsValue(b.id))
 
     return (
-      <div className="min-h-screen p-8">
+      <div className="min-h-screen p-2 md:p-8">
         
         {/* --- FIXED VIDEO PLAYER --- */}
         {playingVideo && (
@@ -168,41 +168,44 @@ export default function Home() {
         
         <div className="max-w-6xl mx-auto">
           
-          {/* NAV WITH LANGUAGE TOGGLE */}
-          <div className="relative flex justify-center gap-4 md:gap-6 mb-8 border-b border-white/20 pb-4 flex-wrap">
-            <Link href="/" className="px-4 py-2 text-white border-b-2 border-pink-500 font-bold text-lg md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
-            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_stream}</Link>
-            <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
-            <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
-            <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+          {/* RESPONSIVE NAV: Scrolls on mobile, Flex on desktop */}
+          <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
+            <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-white border-b-2 border-pink-500 font-bold text-sm md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
+            <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_stream}</Link>
+            <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
+            <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
+            <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
             
-            <button onClick={toggleLanguage} className="absolute right-0 top-0 glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">
+            <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">
               {lang === 'en' ? '🇺🇸' : '🇷🇺'}
             </button>
           </div>
+          {/* Mobile Language Toggle */}
+          <div className="md:hidden flex justify-end mb-4">
+             <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸 English' : '🇷🇺 Русский'}</button>
+          </div>
 
-          {/* HEADER */}
-          <div className="flex justify-between items-center mb-8 border-b border-white/20 pb-4 sticky top-0 bg-black/40 backdrop-blur-lg z-20 py-4 rounded-xl px-4">
-            <div>
-              <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Market</h1>
-              <p className="text-gray-300 text-sm">{t.user}: <span className="font-bold text-white">{user.user_metadata.full_name}</span></p>
+          {/* HEADER: Stack on mobile */}
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-8 border-b border-white/20 pb-4 sticky top-0 bg-black/60 backdrop-blur-lg z-20 py-2 md:py-4 rounded-xl px-4">
+            <div className="text-center md:text-left mb-2 md:mb-0">
+              <h1 className="text-2xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Market</h1>
+              <p className="text-gray-300 text-xs md:text-sm">{t.user}: <span className="font-bold text-white">{user.user_metadata.full_name}</span></p>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 md:gap-6">
               {user.id === ADMIN_ID && (
                 <Link href="/admin">
-                  <button className="glass px-4 py-2 rounded-lg text-sm font-bold transition hover:bg-white/20 flex items-center gap-2">{t.admin_panel}</button>
+                  <button className="glass px-3 py-1 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold transition hover:bg-white/20 flex items-center gap-2">{t.admin_panel}</button>
                 </Link>
               )}
-              <button onClick={handleLogout} className="text-red-400 hover:text-red-300 text-sm font-bold underline">{t.logout}</button>
-              <div className="text-right pl-6 border-l border-white/20">
-                <div className={`text-4xl font-mono font-bold ${tokensLeft === 0 ? 'text-gray-500' : 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]'}`}>{tokensLeft} / 5</div>
-                <div className="text-xs text-gray-300 uppercase tracking-widest">{t.tokens_left}</div>
+              <div className="text-right pl-4 border-l border-white/20">
+                <div className={`text-2xl md:text-4xl font-mono font-bold ${tokensLeft === 0 ? 'text-gray-500' : 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]'}`}>{tokensLeft} / 5</div>
+                <div className="text-[10px] md:text-xs text-gray-300 uppercase tracking-widest">{t.tokens_left}</div>
               </div>
             </div>
           </div>
 
-          {/* GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* GRID: 1 Column on Mobile, 3 on Desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {sortedCountries.map((country, index) => {
               const myVotesForThis = myVotes.filter(v => v.country_id === country.id).length
               const myRatingObj = myRatings.find(r => r.country_id === country.id)
@@ -212,7 +215,6 @@ export default function Home() {
               const videoId = getYoutubeId(country.youtube_url)
               
               return (
-                // UPDATED: Using 'glass' class instead of bg-gray-800
                 <div key={country.id} className={`glass rounded-xl overflow-hidden relative group transition-all duration-500 ${isFavorite ? 'border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.4)]' : 'hover:border-pink-500/50'}`}>
                   {user.id === ADMIN_ID && (
                     <button onClick={() => handleDeleteCountry(country.id, country.name)} className="absolute top-2 right-2 z-40 bg-red-600/80 hover:bg-red-500 p-2 rounded text-white shadow-lg backdrop-blur">
@@ -220,27 +222,27 @@ export default function Home() {
                     </button>
                   )}
 
-                  <div className="h-32 w-full relative overflow-hidden cursor-pointer" onClick={() => videoId ? setPlayingVideo(videoId) : alert(t.no_video)}>
+                  <div className="h-24 md:h-32 w-full relative overflow-hidden cursor-pointer" onClick={() => videoId ? setPlayingVideo(videoId) : alert(t.no_video)}>
                      <img src={`https://flagcdn.com/w640/${country.code.toLowerCase()}.png`} alt={country.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500" />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                     <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-3 py-1 rounded text-white font-mono font-bold border border-white/10">#{index + 1}</div>
+                     <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 md:px-3 md:py-1 rounded text-white font-mono font-bold text-xs md:text-base border border-white/10">#{index + 1}</div>
                      {videoId && (
                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                         <div className="bg-pink-600/90 rounded-full p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110">
-                           <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                         <div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110">
+                           <svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                          </div>
                        </div>
                      )}
                   </div>
 
-                  <div className="p-6 pt-0 relative -top-6">
+                  <div className="p-4 md:p-6 pt-0 relative -top-4 md:-top-6">
                     <div className="flex justify-between items-end mb-2">
                       <div>
-                         <h3 className="text-2xl font-bold drop-shadow-md text-white">{country.name}</h3>
-                         <p className="text-gray-300 text-sm">{country.artist}</p>
+                         <h3 className="text-xl md:text-2xl font-bold drop-shadow-md text-white">{country.name}</h3>
+                         <p className="text-gray-300 text-xs md:text-sm">{country.artist}</p>
                       </div>
-                      <div className="text-right glass p-2 rounded-lg">
-                        <span className={`block text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span>
+                      <div className="text-right glass p-1 md:p-2 rounded-lg">
+                        <span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span>
                         <span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span>
                       </div>
                     </div>
@@ -251,10 +253,10 @@ export default function Home() {
                       title={videoId ? "Click to Watch Video" : t.no_video}
                     >
                       <span>♫ {country.song}</span>
-                      {videoId && <span className="text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}
+                      {videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}
                     </p>
 
-                    <div className="bg-black/30 p-3 rounded-lg mb-4 border border-white/5">
+                    <div className="bg-black/30 p-2 md:p-3 rounded-lg mb-4 border border-white/5">
                       <div className="flex justify-between text-xs mb-2">
                         <span className="text-gray-400">{t.avg}: <b className="text-white">{getAvgScore(country.id)}</b></span>
                         <span className="text-gray-400">{t.me}: <b className="text-pink-400">{myScore}</b></span>
@@ -262,13 +264,13 @@ export default function Home() {
                       <input type="range" min="0" max="10" value={myScore} onChange={(e) => handleRate(country.id, parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
                     </div>
 
-                    <div className="flex items-center justify-between gap-4">
-                      <button onClick={() => removeVote(country.id)} disabled={myVotesForThis === 0 || isVoting} className="w-12 h-12 rounded-full bg-red-900/40 text-red-200 hover:bg-red-600 disabled:opacity-20 font-bold text-xl transition shadow-[0_0_10px_rgba(220,38,38,0.3)]">-</button>
-                      <div className="flex-1 text-center bg-black/40 rounded-lg py-2 border border-white/10">
-                        <span className="text-xs text-gray-500 block">{t.shares}</span>
-                        <span className="text-2xl font-bold text-white">{myVotesForThis}</span>
+                    <div className="flex items-center justify-between gap-3 md:gap-4">
+                      <button onClick={() => removeVote(country.id)} disabled={myVotesForThis === 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900/40 text-red-200 hover:bg-red-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(220,38,38,0.3)]">-</button>
+                      <div className="flex-1 text-center bg-black/40 rounded-lg py-1 md:py-2 border border-white/10">
+                        <span className="text-[10px] md:text-xs text-gray-500 block">{t.shares}</span>
+                        <span className="text-xl md:text-2xl font-bold text-white">{myVotesForThis}</span>
                       </div>
-                      <button onClick={() => placeVote(country.id)} disabled={tokensLeft === 0 || isVoting} className="w-12 h-12 rounded-full bg-green-900/40 text-green-200 hover:bg-green-600 disabled:opacity-20 font-bold text-xl transition shadow-[0_0_10px_rgba(22,163,74,0.3)]">+</button>
+                      <button onClick={() => placeVote(country.id)} disabled={tokensLeft === 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-green-900/40 text-green-200 hover:bg-green-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(22,163,74,0.3)]">+</button>
                     </div>
                   </div>
                 </div>
@@ -282,11 +284,11 @@ export default function Home() {
 
   // LOGGED OUT VIEW
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center text-white">
-      <div className="glass p-12 rounded-2xl text-center shadow-[0_0_50px_rgba(255,0,85,0.2)]">
-        <h1 className="text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Odds</h1>
-        <p className="text-xl mb-8 text-gray-200">Community Driven Predictions</p>
-        <button onClick={handleLogin} className="bg-[#6441A5] hover:bg-[#7d5bbe] text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 transition transform hover:scale-105 shadow-lg mx-auto">
+    <div className="flex min-h-screen flex-col items-center justify-center text-white p-4">
+      <div className="glass p-8 md:p-12 rounded-2xl text-center shadow-[0_0_50px_rgba(255,0,85,0.2)] max-w-md w-full">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 drop-shadow-sm">Eurovision Odds</h1>
+        <p className="text-lg md:text-xl mb-8 text-gray-200">Community Driven Predictions</p>
+        <button onClick={handleLogin} className="bg-[#6441A5] hover:bg-[#7d5bbe] text-white px-6 py-3 md:px-8 md:py-4 rounded-xl font-bold flex items-center gap-3 transition transform hover:scale-105 shadow-lg mx-auto w-full justify-center">
           {t.login}
         </button>
       </div>

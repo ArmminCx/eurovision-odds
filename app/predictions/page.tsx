@@ -151,35 +151,36 @@ export default function PredictionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen p-2 md:p-8">
       <div className="max-w-4xl mx-auto">
         
-        {/* NAV */}
-        <div className="relative flex justify-center gap-4 md:gap-6 mb-8 border-b border-gray-700 pb-4 flex-wrap">
-          <Link href="/" className="px-4 py-2 text-gray-400 hover:text-white font-bold text-lg md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="px-4 py-2 text-gray-400 hover:text-white font-bold text-lg md:text-xl transition">{t.nav_stream}</Link>
-          <Link href="/calendar" className="px-4 py-2 text-gray-400 hover:text-white font-bold text-lg md:text-xl transition">{t.nav_calendar}</Link>
-          <Link href="/predictions" className="px-4 py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-lg md:text-xl transition">{t.nav_predict}</Link>
-          <Link href="/leaderboard" className="px-4 py-2 text-gray-400 hover:text-white font-bold text-lg md:text-xl transition">{t.nav_leaderboard}</Link>
+        {/* RESPONSIVE NAV */}
+        <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
+          <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
+          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_stream}</Link>
+          <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
+          <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
+          <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
           
-          <button onClick={toggleLanguage} className="absolute right-0 top-0 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
+          <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
         </div>
+        <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
 
         {/* --- VIEW 1 --- */}
         {view === 'LIST' && (
           <div>
-            <h1 className="text-3xl font-bold mb-6 text-center text-purple-200">{t.select_final}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">{t.select_final}</h1>
             {finals.length === 0 && <p className="text-center text-gray-500">{t.no_finals}</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {finals.map(final => {
                 const isAdmin = user?.id === ADMIN_ID; const canEnter = final.is_open || isAdmin 
                 return (
-                  <div key={final.id} onClick={() => canEnter && openGame(final)} className={`relative border p-6 rounded-xl transition flex items-center gap-4 group shadow-lg ${canEnter ? 'bg-gray-800 hover:bg-gray-700 border-gray-700 hover:border-purple-500 cursor-pointer' : 'bg-gray-900 border-gray-800 opacity-60 cursor-not-allowed'}`}>
+                  <div key={final.id} onClick={() => canEnter && openGame(final)} className={`relative glass p-4 md:p-6 rounded-xl transition flex items-center gap-4 group ${canEnter ? 'hover:bg-white/5 cursor-pointer border border-white/10 hover:border-pink-500' : 'opacity-60 cursor-not-allowed border border-white/5'}`}>
                     <img src={`https://flagcdn.com/w80/${final.country_code.toLowerCase()}.png`} className="w-12 h-8 rounded object-cover shadow-sm" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold group-hover:text-purple-300 block">{final.name}</span>
-                        {!final.is_open && <span className="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded font-bold">{t.locked}</span>}
+                        <span className="text-lg md:text-xl font-bold group-hover:text-pink-300 block">{final.name}</span>
+                        {!final.is_open && <span className="text-[10px] bg-red-900 text-red-200 px-2 py-0.5 rounded font-bold">{t.locked}</span>}
                       </div>
                       <span className="text-xs text-gray-400">{final.event_time}</span>
                     </div>
@@ -200,18 +201,18 @@ export default function PredictionsPage() {
         {/* --- VIEW 2 --- */}
         {view === 'GAME' && (
           <div>
-            <div className="flex items-center justify-between mb-6 sticky top-0 bg-gray-900/95 py-4 z-10 border-b border-gray-800">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
               <div className="flex gap-2">
-                <button onClick={() => setView('LIST')} className="text-gray-400 hover:text-white font-bold text-sm">{t.change_final}</button>
+                <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold text-sm">{t.change_final}</button>
                 {user?.id === ADMIN_ID && <button onClick={() => setGradingMode(!gradingMode)} className={`ml-4 text-xs px-2 py-1 rounded font-bold border ${gradingMode ? 'bg-yellow-600 text-black border-yellow-500' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>{gradingMode ? t.admin_grading_on : t.admin_grading}</button>}
               </div>
-              {!gradingMode && <button onClick={savePrediction} disabled={loading || saved} className={`px-6 py-2 rounded-lg font-bold transition shadow-lg ${saved ? 'bg-green-600 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white'}`}>{loading ? t.saving : saved ? t.saved : t.save}</button>}
+              {!gradingMode && <button onClick={savePrediction} disabled={loading || saved} className={`px-4 py-2 md:px-6 rounded-lg font-bold transition shadow-lg text-sm md:text-base ${saved ? 'bg-green-600 text-white' : 'bg-pink-600 hover:bg-pink-500 text-white'}`}>{loading ? t.saving : saved ? t.saved : t.save}</button>}
             </div>
             <div className="space-y-3 pb-20">
               {participants.map((p, index) => (
-                <div key={p.id} className="flex items-center gap-4 bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md">
-                  <div className="w-8 h-8 flex items-center justify-center font-bold text-gray-500">#{index+1}</div>
-                  <div className="flex-1 font-bold">{p.artist} <span className="font-normal text-gray-400">- {p.song}</span></div>
+                <div key={p.id} className="glass flex items-center gap-4 p-4 rounded-xl border border-white/10 hover:border-pink-500/30 transition">
+                  <div className="w-8 h-8 flex items-center justify-center font-bold text-gray-400">#{index+1}</div>
+                  <div className="flex-1 font-bold text-sm md:text-lg">{p.artist} <span className="font-normal text-gray-400 block md:inline md:ml-2 text-xs md:text-sm">{p.song}</span></div>
                   {gradingMode ? (
                     <input type="number" value={p.actual_rank || ''} onChange={(e) => handleUpdateResult(p.id, e.target.value)} className="w-10 bg-gray-700 text-center text-white rounded border border-gray-600 focus:border-yellow-500 outline-none" />
                   ) : (
@@ -230,13 +231,13 @@ export default function PredictionsPage() {
         {view === 'STATS' && (
           <div>
             <div className="flex items-center gap-4 mb-6">
-              <button onClick={() => setView('LIST')} className="text-gray-400 hover:text-white font-bold">{t.back_list}</button>
-              <h1 className="text-2xl font-bold">{t.leaderboard_title}</h1>
+              <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold">{t.back_list}</button>
+              <h1 className="text-xl md:text-2xl font-bold">{t.leaderboard_title}</h1>
             </div>
             {loading ? <p>{t.loading}</p> : (
               <div className="grid grid-cols-1 gap-3">
                 {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {
-                  let cardStyle = "bg-gray-800 border-gray-700 hover:border-purple-500"
+                  let cardStyle = "glass border-white/10 hover:border-pink-500"
                   if (p.isRanked) {
                     if (idx === 0) cardStyle = "bg-yellow-900/30 border-yellow-500"
                     else if (idx === 1) cardStyle = "bg-slate-800 border-slate-400"
@@ -248,11 +249,11 @@ export default function PredictionsPage() {
                         {p.isRanked && <span className="font-mono text-gray-500 font-bold w-6">{idx + 1}.</span>}
                         {p.avatar_url ? <img src={p.avatar_url} className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
                         <div>
-                          <div className="font-bold text-white">{p.username || 'Unknown'}</div>
+                          <div className="font-bold text-white text-sm md:text-base">{p.username || 'Unknown'}</div>
                           <div className="text-xs text-gray-400">{p.isRanked ? <span className="text-yellow-400 font-bold">{t.score} {p.score} pts</span> : <span>{t.submitted} {new Date(p.created_at).toLocaleDateString()}</span>}</div>
                         </div>
                       </div>
-                      <span className="text-purple-400 text-sm font-bold">{t.view}</span>
+                      <span className="text-pink-400 text-sm font-bold">{t.view}</span>
                     </div>
                   )
                 })}
@@ -264,25 +265,25 @@ export default function PredictionsPage() {
         {/* --- VIEW 4 --- */}
         {view === 'SPECTATE' && (
           <div>
-            <div className="flex items-center justify-between mb-6 sticky top-0 bg-gray-900/95 py-4 z-10 border-b border-gray-800">
-              <button onClick={() => setView('STATS')} className="text-gray-400 hover:text-white font-bold text-sm">{t.back_list}</button>
-              <div className="text-center"><span className="text-xs text-gray-400 uppercase block">{t.prediction_by}</span><span className="text-xl font-bold text-purple-400">{spectatorName}</span></div>
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
+              <button onClick={() => setView('STATS')} className="text-gray-300 hover:text-white font-bold text-sm">{t.back_list}</button>
+              <div className="text-center"><span className="text-xs text-gray-400 uppercase block">{t.prediction_by}</span><span className="text-xl font-bold text-pink-400">{spectatorName}</span></div>
               <div className="w-10"></div>
             </div>
             <div className="space-y-3 pb-20">
               {spectatorList.map((p, index) => {
                 const userRank = index + 1
                 const actualRank = p.actual_rank
-                let statusColor = "border-gray-700"; let statusIcon = null
+                let statusColor = "border-white/10"; let statusIcon = null
                 if (actualRank) {
                   if (actualRank === userRank) { statusColor = "border-green-500 bg-green-900/10"; statusIcon = <span className="text-green-400 font-bold">{t.exact}</span> }
                   else if (Math.abs(actualRank - userRank) === 1) { statusColor = "border-yellow-600 bg-yellow-900/10"; statusIcon = <span className="text-yellow-500 text-xs">{t.close} ({t.actual} {actualRank})</span> }
                   else { statusColor = "border-red-900/50 opacity-60"; statusIcon = <span className="text-red-500 text-xs">{t.wrong} ({t.actual} {actualRank})</span> }
                 }
                 return (
-                  <div key={p.id} className={`flex items-center gap-4 bg-gray-800 p-4 rounded-xl border-l-4 ${statusColor} shadow-md`}>
+                  <div key={p.id} className={`glass flex items-center gap-4 p-4 rounded-xl border-l-4 ${statusColor} shadow-md`}>
                     <div className="w-8 h-8 flex items-center justify-center font-bold text-xl text-white/50">{userRank}</div>
-                    <div className="flex-1 font-bold">{p.artist} <span className="font-normal text-gray-400">- {p.song}</span></div>
+                    <div className="flex-1 font-bold text-sm md:text-lg">{p.artist} <span className="font-normal text-gray-400 block md:inline md:ml-2 text-xs md:text-sm">{p.song}</span></div>
                     <div>{statusIcon}</div>
                   </div>
                 )
