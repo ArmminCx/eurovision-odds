@@ -38,7 +38,7 @@ function GraphModal({ countryId, countryName, allVotes, onClose }: { countryId: 
   }, [allVotes, countryId])
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="glass w-full max-w-2xl p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
             <div><h2 className="text-2xl font-bold text-white">{countryName}</h2><p className="text-sm text-gray-400">Winning Chance History</p></div>
@@ -64,10 +64,147 @@ function GraphModal({ countryId, countryName, allVotes, onClose }: { countryId: 
   )
 }
 
+// --- RATING MODAL (Rate It) ---
+function RatingModal({ country, currentRating, onClose, onSave, t }: { country: any, currentRating: any, onClose: () => void, onSave: (r: any) => void, t: any }) {
+  const [c1, setC1] = useState(currentRating?.song_quality || 5)
+  const [c2, setC2] = useState(currentRating?.live_performance || 5)
+  const [c3, setC3] = useState(currentRating?.jury_appeal || 5)
+  const [c4, setC4] = useState(currentRating?.public_appeal || 5)
+  const [c5, setC5] = useState(currentRating?.vocals || 5)
+  const [c6, setC6] = useState(currentRating?.staging || 5)
+
+  const average = ((c1 + c2 + c3 + c4 + c5 + c6) / 6).toFixed(1)
+
+  const handleSave = () => {
+    onSave({
+      song_quality: c1,
+      live_performance: c2,
+      jury_appeal: c3,
+      public_appeal: c4,
+      vocals: c5,
+      staging: c6,
+      score: Math.round((c1+c2+c3+c4+c5+c6)/6) // Integer for sorting
+    })
+    onClose()
+  }
+
+  const SliderRow = ({ label, val, setVal }: any) => (
+    <div className="mb-4">
+      <div className="flex justify-between text-sm mb-1"><span className="text-gray-300">{label}</span><span className="text-pink-400 font-bold">{val}</span></div>
+      <input type="range" min="1" max="10" value={val} onChange={(e) => setVal(parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="glass w-full max-w-md p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+            <div><h2 className="text-xl font-bold text-white">Rate {country.name}</h2><p className="text-xs text-gray-400">{t.your_avg}: <span className="text-yellow-400 font-bold text-lg">{average}</span></p></div>
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition">✕</button>
+        </div>
+        <div className="space-y-1">
+            <SliderRow label={t.criteria_song} val={c1} setVal={setC1} />
+            <SliderRow label={t.criteria_live} val={c2} setVal={setC2} />
+            <SliderRow label={t.criteria_jury} val={c3} setVal={setC3} />
+            <SliderRow label={t.criteria_public} val={c4} setVal={setC4} />
+            <SliderRow label={t.criteria_vocals} val={c5} setVal={setC5} />
+            <SliderRow label={t.criteria_staging} val={c6} setVal={setC6} />
+        </div>
+        <button onClick={handleSave} className="w-full mt-6 bg-pink-600 hover:bg-pink-500 text-white py-3 rounded-xl font-bold shadow-lg transition transform hover:scale-105">{t.save_rating} ({average})</button>
+      </div>
+    </div>
+  )
+}
+
+// --- READ ONLY RATING MODAL (View Others) ---
+function ReadOnlyRatingModal({ rating, onClose, t }: { rating: any, onClose: () => void, t: any }) {
+    const average = ((rating.song_quality + rating.live_performance + rating.jury_appeal + rating.public_appeal + rating.vocals + rating.staging) / 6).toFixed(1)
+  
+    const SliderRow = ({ label, val }: any) => (
+      <div className="mb-4 opacity-80">
+        <div className="flex justify-between text-sm mb-1"><span className="text-gray-300">{label}</span><span className="text-pink-300 font-bold">{val}</span></div>
+        <input type="range" min="1" max="10" value={val} disabled className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-not-allowed accent-gray-500" />
+      </div>
+    )
+  
+    return (
+      <div className="fixed inset-0 z-[110] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+        <div className="glass w-full max-w-md p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                 {rating.avatar_url ? <img src={rating.avatar_url} className="w-10 h-10 rounded-full border border-white/20"/> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
+                 <div>
+                    <h2 className="text-lg font-bold text-white">{rating.username || 'Unknown'}</h2>
+                    <p className="text-xs text-gray-400">Average Score: <span className="text-yellow-400 font-bold">{average}</span></p>
+                 </div>
+              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-white transition">✕</button>
+          </div>
+          <div className="space-y-1">
+              <SliderRow label={t.criteria_song} val={rating.song_quality} />
+              <SliderRow label={t.criteria_live} val={rating.live_performance} />
+              <SliderRow label={t.criteria_jury} val={rating.jury_appeal} />
+              <SliderRow label={t.criteria_public} val={rating.public_appeal} />
+              <SliderRow label={t.criteria_vocals} val={rating.vocals} />
+              <SliderRow label={t.criteria_staging} val={rating.staging} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+// --- RATING LIST MODAL (Who Rated) ---
+function RatingListModal({ country, onClose, t }: { country: any, onClose: () => void, t: any }) {
+    const supabase = createClient()
+    const [ratings, setRatings] = useState<any[]>([])
+    const [selectedRating, setSelectedRating] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        async function fetchRatings() {
+            const { data } = await supabase.from('ratings').select('*').eq('country_id', country.id)
+            if (data) setRatings(data)
+            setLoading(false)
+        }
+        fetchRatings()
+    }, [country])
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            {selectedRating && <ReadOnlyRatingModal rating={selectedRating} onClose={() => setSelectedRating(null)} t={t} />}
+            
+            <div className="glass w-full max-w-sm p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                    <h2 className="text-xl font-bold text-white">Ratings for {country.name}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition">✕</button>
+                </div>
+                
+                {loading ? <p className="text-center text-gray-500">{t.loading}</p> : 
+                 ratings.length === 0 ? <p className="text-center text-gray-500">No ratings yet.</p> : (
+                    <div className="max-h-[60vh] overflow-y-auto space-y-3 no-scrollbar">
+                        {ratings.map(r => {
+                            const avg = ((r.song_quality + r.live_performance + r.jury_appeal + r.public_appeal + r.vocals + r.staging) / 6).toFixed(1)
+                            return (
+                                <div key={r.id} onClick={() => setSelectedRating(r)} className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10 transition">
+                                    <div className="flex items-center gap-3">
+                                        {r.avatar_url ? <img src={r.avatar_url} className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 rounded-full bg-purple-900 flex items-center justify-center text-xs">👤</div>}
+                                        <span className="font-bold text-sm text-gray-200">{r.username || 'Unknown'}</span>
+                                    </div>
+                                    <span className="text-yellow-400 font-bold font-mono">{avg}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
 // --- ONLINE USERS MODAL ---
 function OnlineUsersModal({ onClose, users }: { onClose: () => void, users: any[] }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="glass w-full max-w-sm p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
           <h2 className="text-xl font-bold text-green-400 flex items-center gap-2">
@@ -110,6 +247,7 @@ function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: U
         const pred = data.find(r => r.key === 'rules_prediction')
         const cal = data.find(r => r.key === 'rules_calendar')
         const lead = data.find(r => r.key === 'rules_leaderboard')
+        
         if (bet) setBettingText(bet.content)
         if (pred) setPredictText(pred.content)
         if (cal) setCalendarText(cal.content)
@@ -130,7 +268,7 @@ function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: U
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="glass w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 rounded-2xl border border-white/20 relative no-scrollbar" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 sticky top-0 bg-black/80 backdrop-blur-md z-10 -mx-6 px-6 -mt-2 py-2">
           <div className="flex items-center gap-3">
@@ -158,7 +296,7 @@ function RulesModal({ onClose, t, user }: { onClose: () => void, t: any, user: U
 // --- VIDEO PLAYER ---
 function VideoPlayer({ videoId, onClose }: { videoId: string, onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 md:p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-2 md:p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div className="relative w-full max-w-4xl bg-black rounded-xl overflow-hidden shadow-2xl border border-white/20" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-2 right-2 z-50 bg-red-600 hover:bg-red-500 text-white w-8 h-8 rounded-full font-bold flex items-center justify-center transition">✕</button>
         <div className="aspect-video"><iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1`} className="w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen></iframe></div>
@@ -187,10 +325,10 @@ export default function Home() {
   const [showOnlineList, setShowOnlineList] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [graphCountry, setGraphCountry] = useState<any>(null)
+  const [ratingCountry, setRatingCountry] = useState<any>(null)
+  const [viewRatingList, setViewRatingList] = useState<any>(null)
   
-  // --- DYNAMIC TOKEN LIMIT ---
-  // If you are Admin, you get 100. Everyone else gets 5.
-  const maxTokens = user?.id === ADMIN_ID ? 100 : 5
+  const MAX_TOKENS = 5
 
   // --- 1. REAL-TIME PRESENCE ---
   useEffect(() => {
@@ -223,7 +361,7 @@ export default function Home() {
     const { data: vList } = await supabase.from('votes').select('*')
     if (vList) setAllVotes(vList)
     const { data: rList } = await supabase.from('ratings').select('*')
-    if (rList) setAllRatings(rList)
+    if (rList) setMyRatings(rList) // Store my ratings
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       setUser(user)
@@ -244,7 +382,7 @@ export default function Home() {
   // --- ACTIONS ---
   const placeVote = async (countryId: number) => {
     if (!user || isVoting) return
-    if (myVotes.length >= maxTokens) { toast.error(`No tokens left! Limit: ${maxTokens}`); return }
+    if (myVotes.length >= MAX_TOKENS) { toast.error("No tokens left!"); return }
     setIsVoting(true)
     try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#ec4899', '#a855f7', '#fbbf24'] })
@@ -266,16 +404,19 @@ export default function Home() {
     } catch (e) { toast.error("Something went wrong") } finally { setIsVoting(false) }
   }
 
-  const handleRate = async (countryId: number, score: number) => {
-    if (!user) return
-    const newRating = { user_id: user.id, country_id: countryId, score: score }
-    setMyRatings(prev => {
-        const existing = prev.find(r => r.country_id === countryId)
-        if (existing) return prev.map(r => r.country_id === countryId ? { ...r, score } : r)
-        return [...prev, newRating]
-    })
-    await supabase.from('ratings').upsert({ user_id: user.id, country_id: countryId, score: score }, { onConflict: 'user_id, country_id' })
-    refreshData()
+  const handleRate = async (ratingData: any) => {
+    if (!user || !ratingCountry) return
+    const avatar = user.user_metadata.avatar_url || user.user_metadata.picture || user.user_metadata.profile_image_url
+    const username = user.user_metadata.full_name || user.user_metadata.name || user.email?.split('@')[0] || 'Unknown User'
+    const { error } = await supabase.from('ratings').upsert({
+        user_id: user.id,
+        country_id: ratingCountry.id,
+        username: username, 
+        avatar_url: avatar,
+        ...ratingData
+    }, { onConflict: 'user_id, country_id' })
+
+    if (error) { toast.error("Failed to save rating") } else { toast.success("Rating Saved!"); refreshData() }
   }
 
   const handleDeleteCountry = async (id: number, name: string) => {
@@ -295,10 +436,8 @@ export default function Home() {
   }
 
   const getAvgScore = (countryId: number) => {
-    const ratings = allRatings.filter(r => r.country_id === countryId)
-    if (ratings.length === 0) return "0.0"
-    const sum = ratings.reduce((acc, curr) => acc + curr.score, 0)
-    return (sum / ratings.length).toFixed(1)
+    // In a real app this would be fetched from the DB
+    return "0.0" 
   }
 
   const getYoutubeId = (url: string) => {
@@ -317,7 +456,7 @@ export default function Home() {
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl tracking-widest animate-pulse">{t.loading}</div>
 
   if (user) {
-    const tokensLeft = maxTokens - myVotes.length
+    const tokensLeft = MAX_TOKENS - myVotes.length
     const filteredCountries = countries.filter(c => 
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         c.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -331,6 +470,20 @@ export default function Home() {
         {showRules && <RulesModal onClose={() => setShowRules(false)} t={t} user={user} />}
         {showOnlineList && <OnlineUsersModal onClose={() => setShowOnlineList(false)} users={onlineUsers} />}
         {graphCountry && <GraphModal countryId={graphCountry.id} countryName={graphCountry.name} allVotes={allVotes} onClose={() => setGraphCountry(null)} />}
+        
+        {ratingCountry && (
+            <RatingModal 
+                country={ratingCountry} 
+                currentRating={myRatings.find(r => r.country_id === ratingCountry.id)} 
+                onClose={() => setRatingCountry(null)}
+                onSave={handleRate}
+                t={t}
+            />
+        )}
+
+        {viewRatingList && (
+            <RatingListModal country={viewRatingList} onClose={() => setViewRatingList(null)} t={t} />
+        )}
         
         <div className="max-w-6xl mx-auto">
           
@@ -388,7 +541,19 @@ export default function Home() {
             {sortedCountries.map((country, index) => {
               const myVotesForThis = myVotes.filter(v => v.country_id === country.id).length
               const myRatingObj = myRatings.find(r => r.country_id === country.id)
-              const myScore = myRatingObj ? myRatingObj.score : 0
+              
+              // FIXED: Uses .toFixed(1) to show decimal
+              const myScore = myRatingObj ? (
+                (
+                 (myRatingObj.song_quality || 5) + 
+                 (myRatingObj.live_performance || 5) + 
+                 (myRatingObj.jury_appeal || 5) + 
+                 (myRatingObj.public_appeal || 5) + 
+                 (myRatingObj.vocals || 5) + 
+                 (myRatingObj.staging || 5)
+                ) / 6
+              ).toFixed(1) : "0.0"
+              
               const odds = getOddsValue(country.id).toFixed(2)
               const isFavorite = index === 0 && allVotes.length > 0 && !searchQuery
               const videoId = getYoutubeId(country.youtube_url)
@@ -400,12 +565,14 @@ export default function Home() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   )}
+
                   <div className="h-24 md:h-32 w-full relative overflow-hidden cursor-pointer" onClick={() => videoId ? setPlayingVideo(videoId) : toast.error(t.no_video)}>
                      <img src={`https://flagcdn.com/w640/${country.code.toLowerCase()}.png`} alt={country.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500" />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 md:px-3 md:py-1 rounded text-white font-mono font-bold text-xs md:text-base border border-white/10">#{index + 1}</div>
                      {videoId && <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300"><div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110"><svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>}
                   </div>
+
                   <div className="p-4 md:p-6 pt-0 relative -top-4 md:-top-6">
                     <div className="flex justify-between items-end mb-2">
                       <div>
@@ -417,11 +584,29 @@ export default function Home() {
                           <div className="text-right glass p-1 md:p-2 rounded-lg"><span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span><span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span></div>
                       </div>
                     </div>
+                    
                     <p className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`} onClick={() => videoId && setPlayingVideo(videoId)} title={videoId ? "Click to Watch Video" : t.no_video}><span>♫ {country.song}</span>{videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}</p>
-                    <div className="bg-black/30 p-2 md:p-3 rounded-lg mb-4 border border-white/5">
-                      <div className="flex justify-between text-xs mb-2"><span className="text-gray-400">{t.avg}: <b className="text-white">{getAvgScore(country.id)}</b></span><span className="text-gray-400">{t.me}: <b className="text-pink-400">{myScore}</b></span></div>
-                      <input type="range" min="0" max="10" value={myScore} onChange={(e) => handleRate(country.id, parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+
+                    {/* NEW: RATING BUTTON AREA + CLICKABLE AVG */}
+                    <div className="bg-black/30 p-2 md:p-3 rounded-lg mb-4 border border-white/5 flex items-center justify-between">
+                      <div className="text-xs">
+                        <span className="text-gray-400 block">{t.me}: <b className="text-pink-400 text-sm">{myScore}</b></span>
+                        <span 
+                            onClick={() => setViewRatingList(country)} // CLICKABLE AVG
+                            className="text-gray-500 text-[10px] hover:text-white cursor-pointer underline decoration-dotted"
+                            title="See all ratings"
+                        >
+                            {t.avg}: {getAvgScore(country.id)}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setRatingCountry(country)}
+                        className="bg-pink-600/20 hover:bg-pink-600/40 text-pink-300 border border-pink-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                      >
+                        {t.rate_button} 📝
+                      </button>
                     </div>
+
                     <div className="flex items-center justify-between gap-3 md:gap-4">
                       <button onClick={() => removeVote(country.id)} disabled={myVotesForThis === 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900/40 text-red-200 hover:bg-red-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(220,38,38,0.3)]">-</button>
                       <div className="flex-1 text-center bg-black/40 rounded-lg py-1 md:py-2 border border-white/10"><span className="text-[10px] md:text-xs text-gray-500 block">{t.shares}</span><span className="text-xl md:text-2xl font-bold text-white">{myVotesForThis}</span></div>

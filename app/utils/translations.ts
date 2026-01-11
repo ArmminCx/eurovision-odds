@@ -27,6 +27,17 @@ export const translations = {
     sort_odds: "Sort by: Odds",
     sort_alpha: "Sort by: A-Z",
 
+    // Detailed Rating System (UPDATED)
+    rate_button: "Rate Song",
+    criteria_song: "Song Quality",
+    criteria_live: "Live Performance", // Fixed: Full name
+    criteria_jury: "Jury Appeal",
+    criteria_public: "Public Appeal",
+    criteria_vocals: "Vocals",
+    criteria_staging: "Instrumentals", // Fixed: Changed from Staging
+    your_avg: "Your Avg",
+    save_rating: "Submit Votes",
+
     // Stream Page
     main_stage: "Currently watching on Main Stage",
     open_chat: "Open Chat ↗",
@@ -52,7 +63,7 @@ export const translations = {
     locked: "LOCKED",
     view_stats: "View Statistics",
     
-    // Event Status (Predictions)
+    // Event Status
     status_open: "OPEN",
     status_locked: "OPENING SOON",
     status_closed: "EVENT OVER",
@@ -67,7 +78,7 @@ export const translations = {
     score: "Score:",
     prediction_by: "Prediction by",
     exact: "✓ Exact",
-    status_close: "Close", // Used for game result (Close call)
+    status_close: "Close",
     wrong: "Wrong",
     actual: "Actual:",
 
@@ -80,7 +91,7 @@ export const translations = {
     loading_scores: "Loading scores...",
     no_scores: "No points scored yet! Wait for results.",
 
-    // User Profile & Badges
+    // User Profile
     profile_title: "User Profile",
     badges: "Badges",
     stats: "Season Stats",
@@ -102,7 +113,7 @@ export const translations = {
     help_calendar_desc: "Track all National Finals and events. Click the heart icons on the calendar to see details or watch links for that specific event.",
     help_leaderboard_title: "🏆 Season Leaderboard",
     help_leaderboard_desc: "Compete against the community! Points from all prediction games are summed up here to decide the ultimate Eurovision Expert.",
-    close_modal: "Close" // Used for buttons
+    close_modal: "Close"
   },
   ru: {
     // Navigation
@@ -132,6 +143,17 @@ export const translations = {
     sort_odds: "Сорт: Коэф.",
     sort_alpha: "Сорт: А-Я",
 
+    // Detailed Rating System (UPDATED)
+    rate_button: "Оценить",
+    criteria_song: "Качество песни",
+    criteria_live: "Выступление", // Updated
+    criteria_jury: "Жюри",
+    criteria_public: "Зрители",
+    criteria_vocals: "Вокал",
+    criteria_staging: "Инструментал", // Updated
+    your_avg: "Ваш ср.",
+    save_rating: "Сохранить",
+
     // Stream Page
     main_stage: "Сейчас на главном экране",
     open_chat: "Чат ↗",
@@ -157,7 +179,7 @@ export const translations = {
     locked: "ЗАКРЫТО",
     view_stats: "Статистика",
 
-    // Event Status (Predictions)
+    // Event Status
     status_open: "ОТКРЫТО",
     status_locked: "СКОРО ОТКРЫТИЕ",
     status_closed: "СОБЫТИЕ ЗАВЕРШЕНО",
@@ -172,7 +194,7 @@ export const translations = {
     score: "Очки:",
     prediction_by: "Прогноз от",
     exact: "✓ Точно",
-    status_close: "Близко", // Used for game result
+    status_close: "Близко",
     wrong: "Мимо",
     actual: "Факт:",
 
@@ -185,7 +207,7 @@ export const translations = {
     loading_scores: "Загрузка очков...",
     no_scores: "Пока нет очков! Ждем результатов.",
 
-    // User Profile & Badges
+    // User Profile
     profile_title: "Профиль",
     badges: "Значки",
     stats: "Статистика",
@@ -207,6 +229,6 @@ export const translations = {
     help_calendar_desc: "Следите за всеми нацотборами. Нажимайте на сердечки в календаре, чтобы увидеть детали или ссылки на трансляции.",
     help_leaderboard_title: "🏆 Таблица Лидеров",
     help_leaderboard_desc: "Соревнуйтесь с сообществом! Очки за все прогнозы суммируются здесь, чтобы определить главного эксперта Евровидения.",
-    close_modal: "Закрыть" // Used for buttons
+    close_modal: "Закрыть"
   }
 }
