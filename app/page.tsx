@@ -64,7 +64,7 @@ function GraphModal({ countryId, countryName, allVotes, onClose }: { countryId: 
   )
 }
 
-// --- RATING MODAL (Rate It) ---
+// --- RATING MODAL (FOR ME TO RATE) ---
 function RatingModal({ country, currentRating, onClose, onSave, t }: { country: any, currentRating: any, onClose: () => void, onSave: (r: any) => void, t: any }) {
   const [c1, setC1] = useState(currentRating?.song_quality || 5)
   const [c2, setC2] = useState(currentRating?.live_performance || 5)
@@ -83,7 +83,7 @@ function RatingModal({ country, currentRating, onClose, onSave, t }: { country: 
       public_appeal: c4,
       vocals: c5,
       staging: c6,
-      score: Math.round((c1+c2+c3+c4+c5+c6)/6) // Integer for sorting
+      score: Math.round((c1+c2+c3+c4+c5+c6)/6)
     })
     onClose()
   }
@@ -116,7 +116,7 @@ function RatingModal({ country, currentRating, onClose, onSave, t }: { country: 
   )
 }
 
-// --- READ ONLY RATING MODAL (View Others) ---
+// --- READ ONLY RATING MODAL (VIEW OTHERS) ---
 function ReadOnlyRatingModal({ rating, onClose, t }: { rating: any, onClose: () => void, t: any }) {
     const average = ((rating.song_quality + rating.live_performance + rating.jury_appeal + rating.public_appeal + rating.vocals + rating.staging) / 6).toFixed(1)
   
@@ -153,7 +153,7 @@ function ReadOnlyRatingModal({ rating, onClose, t }: { rating: any, onClose: () 
     )
   }
 
-// --- RATING LIST MODAL (Who Rated) ---
+// --- RATING LIST MODAL (WHO RATED) ---
 function RatingListModal({ country, onClose, t }: { country: any, onClose: () => void, t: any }) {
     const supabase = createClient()
     const [ratings, setRatings] = useState<any[]>([])
@@ -328,7 +328,8 @@ export default function Home() {
   const [ratingCountry, setRatingCountry] = useState<any>(null)
   const [viewRatingList, setViewRatingList] = useState<any>(null)
   
-  const MAX_TOKENS = 5
+  // ⚠️ CHANGED TO 100 FOR TESTING
+  const MAX_TOKENS = 100 
 
   // --- 1. REAL-TIME PRESENCE ---
   useEffect(() => {
@@ -354,19 +355,24 @@ export default function Home() {
     return () => { supabase.removeChannel(channel) }
   }, [user]) 
 
-  // --- 2. DATA REFRESH ---
+  // --- 2. DATA REFRESH (FIXED LOGIC HERE) ---
   async function refreshData() {
     const { data: cList } = await supabase.from('countries').select('*').order('name')
     if (cList) setCountries(cList)
+    
+    // Fetch all votes/ratings
     const { data: vList } = await supabase.from('votes').select('*')
     if (vList) setAllVotes(vList)
     const { data: rList } = await supabase.from('ratings').select('*')
-    if (rList) setMyRatings(rList) // Store my ratings
+    if (rList) setAllRatings(rList) // Store EVERYONE's ratings in allRatings
+
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       setUser(user)
       const { data: mvList } = await supabase.from('votes').select('*').eq('user_id', user.id)
       if (mvList) setMyVotes(mvList)
+      
+      // FIXED: Specifically fetch MY ratings
       const { data: mrList } = await supabase.from('ratings').select('*').eq('user_id', user.id)
       if (mrList) setMyRatings(mrList)
     }
@@ -404,6 +410,7 @@ export default function Home() {
     } catch (e) { toast.error("Something went wrong") } finally { setIsVoting(false) }
   }
 
+  // --- SAVE RATING ---
   const handleRate = async (ratingData: any) => {
     if (!user || !ratingCountry) return
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture || user.user_metadata.profile_image_url
@@ -435,9 +442,17 @@ export default function Home() {
     return 1 / (count / total)
   }
 
+  // FIXED: CALCULATE ACTUAL GLOBAL AVERAGE
   const getAvgScore = (countryId: number) => {
-    // In a real app this would be fetched from the DB
-    return "0.0" 
+    const relevantRatings = allRatings.filter(r => r.country_id === countryId)
+    if (relevantRatings.length === 0) return "0.0"
+    
+    // Sum up the 'score' property of all ratings for this country
+    const totalScore = relevantRatings.reduce((acc, curr) => acc + (curr.score || 0), 0)
+    
+    // Calculate mean
+    const avg = totalScore / relevantRatings.length
+    return avg.toFixed(1)
   }
 
   const getYoutubeId = (url: string) => {
@@ -542,7 +557,6 @@ export default function Home() {
               const myVotesForThis = myVotes.filter(v => v.country_id === country.id).length
               const myRatingObj = myRatings.find(r => r.country_id === country.id)
               
-              // FIXED: Uses .toFixed(1) to show decimal
               const myScore = myRatingObj ? (
                 (
                  (myRatingObj.song_quality || 5) + 
@@ -565,14 +579,12 @@ export default function Home() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   )}
-
                   <div className="h-24 md:h-32 w-full relative overflow-hidden cursor-pointer" onClick={() => videoId ? setPlayingVideo(videoId) : toast.error(t.no_video)}>
                      <img src={`https://flagcdn.com/w640/${country.code.toLowerCase()}.png`} alt={country.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500" />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 md:px-3 md:py-1 rounded text-white font-mono font-bold text-xs md:text-base border border-white/10">#{index + 1}</div>
                      {videoId && <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300"><div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110"><svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>}
                   </div>
-
                   <div className="p-4 md:p-6 pt-0 relative -top-4 md:-top-6">
                     <div className="flex justify-between items-end mb-2">
                       <div>
@@ -584,9 +596,8 @@ export default function Home() {
                           <div className="text-right glass p-1 md:p-2 rounded-lg"><span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span><span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span></div>
                       </div>
                     </div>
-                    
                     <p className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`} onClick={() => videoId && setPlayingVideo(videoId)} title={videoId ? "Click to Watch Video" : t.no_video}><span>♫ {country.song}</span>{videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}</p>
-
+                    
                     {/* NEW: RATING BUTTON AREA + CLICKABLE AVG */}
                     <div className="bg-black/30 p-2 md:p-3 rounded-lg mb-4 border border-white/5 flex items-center justify-between">
                       <div className="text-xs">
