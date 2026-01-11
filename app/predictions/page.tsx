@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { User } from '@supabase/supabase-js'
 import { useLanguage } from '@/app/context/LanguageContext'
-import confetti from 'canvas-confetti' // IMPORT ADDED HERE
+import confetti from 'canvas-confetti' // Make sure confetti is imported for the save action
 
 // ⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
@@ -146,18 +146,23 @@ export default function PredictionsPage() {
     if (!user || !selectedFinal) return
     setLoading(true)
 
+    // SECURITY CHECK
     if (user.id !== ADMIN_ID) {
-      const { data: currentStatus } = await supabase.from('national_finals').select('is_open').eq('id', selectedFinal.id).single()
-      if (!currentStatus?.is_open) {
+      // FIX: Request 'status' instead of 'is_open' to fix TS error
+      const { data: currentStatus } = await supabase.from('national_finals').select('status').eq('id', selectedFinal.id).single()
+      
+      if (currentStatus?.status !== 'open') {
         alert("⛔ VOTING CLOSED!")
-        setLoading(false); setSelectedFinal({ ...selectedFinal, is_open: false }); return
+        setLoading(false); setSelectedFinal({ ...selectedFinal, status: currentStatus?.status }); return
       }
     }
+    
+    // REAL-TIME LOCK LISTENER
     const channel = supabase.channel('final_lock')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'national_finals', filter: `id=eq.${selectedFinal.id}` }, (payload) => {
         setSelectedFinal(payload.new)
       }).subscribe()
-
+    
     // --- CONFETTI ANIMATION ---
     const end = Date.now() + 1000; const colors = ['#ec4899', '#ffffff'];
     (function frame() {
@@ -165,7 +170,6 @@ export default function PredictionsPage() {
         confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
         if (Date.now() < end) requestAnimationFrame(frame);
     }());
-    // --------------------------
 
     await supabase.from('user_rankings').delete().eq('user_id', user.id).eq('final_id', selectedFinal.id)
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture
@@ -179,14 +183,30 @@ export default function PredictionsPage() {
   const handleDeleteFinal = async (e: React.MouseEvent, id: number, name: string) => {
     e.stopPropagation()
     if (!confirm(`${t.delete_confirm} ${name}?`)) return
-    await supabase.from('user_rankings').delete().eq('final_id', id)
-    await supabase.from('final_participants').delete().eq('final_id', id)
-    await supabase.from('national_finals').delete().eq('id', id)
-    fetchFinals()
+    
+    const { error } = await supabase.from('national_finals').delete().eq('id', id)
+
+    if (error) {
+        alert(`Error: ${error.message}`)
+    } else {
+        window.location.reload()
+    }
   }
 
   const handleToggleStatus = async (e: React.MouseEvent, id: number, status: boolean) => {
     e.stopPropagation(); await supabase.from('national_finals').update({ is_open: !status }).eq('id', id); fetchFinals()
+  }
+  
+  // FIXED: Renamed to match the new cycle logic (Open -> Locked -> Closed)
+  const handleCycleStatus = async (e: React.MouseEvent, id: number, currentStatus: string) => {
+    e.stopPropagation()
+    let nextStatus = 'locked'
+    if (!currentStatus || currentStatus === 'locked') nextStatus = 'open'
+    else if (currentStatus === 'open') nextStatus = 'closed'
+    else if (currentStatus === 'closed') nextStatus = 'locked'
+
+    await supabase.from('national_finals').update({ status: nextStatus }).eq('id', id)
+    fetchFinals()
   }
 
   const handleUpdateResult = async (participantId: number, rankStr: string) => {
@@ -221,21 +241,31 @@ export default function PredictionsPage() {
             {finals.length === 0 && <p className="text-center text-gray-500">{t.no_finals}</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {finals.map(final => {
-                const isAdmin = user?.id === ADMIN_ID; const canEnter = final.is_open || isAdmin 
+                const isAdmin = user?.id === ADMIN_ID
+                const status = final.status || 'locked'
+                const canEnter = status === 'open' || isAdmin 
+                
+                let badgeColor = "bg-orange-500 text-black"
+                let badgeText = t.status_locked
+                if (status === 'open') { badgeColor = "bg-green-500 text-black"; badgeText = t.status_open }
+                else if (status === 'closed') { badgeColor = "bg-red-600 text-white"; badgeText = t.status_closed }
+
                 return (
                   <div key={final.id} onClick={() => canEnter && openGame(final)} className={`relative glass p-4 md:p-6 rounded-xl transition flex items-center gap-4 group shadow-lg ${canEnter ? 'hover:bg-white/5 cursor-pointer border border-white/10 hover:border-pink-500' : 'opacity-60 cursor-not-allowed border border-white/5'}`}>
                     <img src={`https://flagcdn.com/w80/${final.country_code.toLowerCase()}.png`} className="w-12 h-8 rounded object-cover shadow-sm" />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-lg md:text-xl font-bold group-hover:text-pink-300 block">{final.name}</span>
-                        {!final.is_open && <span className="text-[10px] bg-red-900 text-red-200 px-2 py-0.5 rounded font-bold">{t.locked}</span>}
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badgeColor}`}>{badgeText}</span>
                       </div>
                       <span className="text-xs text-gray-400">{final.event_time}</span>
                     </div>
+                    
                     <button onClick={(e) => openStats(final, e)} className="w-10 h-10 rounded-full bg-blue-900/50 hover:bg-blue-600 text-blue-200 flex items-center justify-center transition z-20 border border-blue-700/50">📊</button>
+                    
                     {isAdmin && (
                       <div className="flex gap-2 ml-2">
-                        <button onClick={(e) => handleToggleStatus(e, final.id, final.is_open)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold border bg-gray-700">{final.is_open ? '🔓' : '🔒'}</button>
+                        <button onClick={(e) => handleCycleStatus(e, final.id, status)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold border bg-gray-700 hover:bg-gray-600">{status === 'open' ? '🔓' : status === 'locked' ? '🟠' : '🔒'}</button>
                         <button onClick={(e) => handleDeleteFinal(e, final.id, final.name)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold bg-red-900/50 text-white">✕</button>
                       </div>
                     )}
@@ -254,10 +284,10 @@ export default function PredictionsPage() {
                 <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold text-sm">{t.change_final}</button>
                 {user?.id === ADMIN_ID && <button onClick={() => setGradingMode(!gradingMode)} className={`ml-4 text-xs px-2 py-1 rounded font-bold border ${gradingMode ? 'bg-yellow-600 text-black border-yellow-500' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>{gradingMode ? t.admin_grading_on : t.admin_grading}</button>}
               </div>
-              {!gradingMode && (selectedFinal?.is_open || user?.id === ADMIN_ID) ? (
+              {!gradingMode && ((selectedFinal?.status === 'open') || user?.id === ADMIN_ID) ? (
                 <button onClick={savePrediction} disabled={loading || saved} className={`px-4 py-2 md:px-6 rounded-lg font-bold transition shadow-lg text-sm md:text-base ${saved ? 'bg-green-600 text-white' : 'bg-pink-600 hover:bg-pink-500 text-white'}`}>{loading ? t.saving : saved ? t.saved : t.save}</button>
               ) : (
-                <div className="px-4 py-2 bg-red-900/50 text-red-200 rounded-lg font-bold border border-red-800 flex items-center gap-2">🔒 {t.locked}</div>
+                <div className="px-4 py-2 bg-red-900/50 text-red-200 rounded-lg font-bold border border-red-800 flex items-center gap-2">🔒 {selectedFinal?.status === 'locked' ? t.status_locked : t.locked}</div>
               )}
             </div>
             
@@ -270,8 +300,8 @@ export default function PredictionsPage() {
                     <input type="number" value={p.actual_rank || ''} onChange={(e) => handleUpdateResult(p.id, e.target.value)} className="w-10 bg-gray-700 text-center text-white rounded border border-gray-600 focus:border-yellow-500 outline-none" />
                   ) : (
                     <div className="flex flex-col gap-1">
-                      <button onClick={() => move(index, -1)} className="text-green-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={(!selectedFinal?.is_open && user?.id !== ADMIN_ID)}>▲</button>
-                      <button onClick={() => move(index, 1)} className="text-red-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={(!selectedFinal?.is_open && user?.id !== ADMIN_ID)}>▼</button>
+                      <button onClick={() => move(index, -1)} className="text-green-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={((selectedFinal?.status && selectedFinal?.status !== 'open') && user?.id !== ADMIN_ID)}>▲</button>
+                      <button onClick={() => move(index, 1)} className="text-red-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={((selectedFinal?.status && selectedFinal?.status !== 'open') && user?.id !== ADMIN_ID)}>▼</button>
                     </div>
                   )}
                 </div>

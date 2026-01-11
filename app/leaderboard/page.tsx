@@ -5,12 +5,17 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
+import UserProfileModal from '@/app/components/UserProfileModal'
+
+// ⚠️ ADDED THIS MISSING LINE
+const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 
 export default function LeaderboardPage() {
   const supabase = createClient()
   const { t, lang, toggleLanguage } = useLanguage()
   const [leaders, setLeaders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
 
   useEffect(() => {
     async function getLeaders() {
@@ -23,17 +28,19 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen p-2 md:p-8">
+      
+      {/* PROFILE MODAL */}
+      {selectedUser && <UserProfileModal userId={selectedUser} onClose={() => setSelectedUser(null)} />}
+
       <div className="max-w-4xl mx-auto">
         
         {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          
           <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2">
-            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6" />
+            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
             {t.nav_stream}
           </Link>
-          
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
@@ -59,19 +66,27 @@ export default function LeaderboardPage() {
             <div className="divide-y divide-white/10">
               {leaders.map((user, index) => {
                 const rank = index + 1
-                let rowClass = "hover:bg-white/5 transition"
+                let rowClass = "hover:bg-white/5 transition cursor-pointer"
                 let rankDisplay = <span className="font-mono text-gray-500">#{rank}</span>
                 
-                if (rank === 1) { rowClass = "bg-yellow-900/20 hover:bg-yellow-900/30"; rankDisplay = <span className="text-2xl md:text-3xl">🥇</span> }
-                else if (rank === 2) { rowClass = "bg-slate-800/50 hover:bg-slate-800/80"; rankDisplay = <span className="text-2xl md:text-3xl">🥈</span> }
-                else if (rank === 3) { rowClass = "bg-orange-900/20 hover:bg-orange-900/30"; rankDisplay = <span className="text-2xl md:text-3xl">🥉</span> }
+                if (rank === 1) { rowClass = "bg-yellow-900/20 hover:bg-yellow-900/30 cursor-pointer"; rankDisplay = <span className="text-2xl md:text-3xl">🥇</span> }
+                else if (rank === 2) { rowClass = "bg-slate-800/50 hover:bg-slate-800/80 cursor-pointer"; rankDisplay = <span className="text-2xl md:text-3xl">🥈</span> }
+                else if (rank === 3) { rowClass = "bg-orange-900/20 hover:bg-orange-900/30 cursor-pointer"; rankDisplay = <span className="text-2xl md:text-3xl">🥉</span> }
 
                 return (
-                  <div key={user.user_id} className={`grid grid-cols-12 gap-2 md:gap-4 p-3 md:p-4 items-center ${rowClass}`}>
+                  <div 
+                    key={user.user_id} 
+                    onClick={() => setSelectedUser(user.user_id)} 
+                    className={`grid grid-cols-12 gap-2 md:gap-4 p-3 md:p-4 items-center ${rowClass}`}
+                  >
                     <div className="col-span-2 text-center font-bold">{rankDisplay}</div>
                     <div className="col-span-6 flex items-center gap-2 md:gap-3">
                       {user.avatar_url ? <img src={user.avatar_url} className={`w-8 h-8 md:w-10 md:h-10 rounded-full border-2 ${rank === 1 ? 'border-yellow-500' : 'border-gray-600'}`} /> : <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-900 flex items-center justify-center text-sm md:text-lg">👤</div>}
-                      <div className="font-bold text-white text-xs md:text-base truncate">{user.username || 'Unknown'}</div>
+                      <div className="font-bold text-white text-xs md:text-base truncate">
+                        {user.username || 'Unknown'}
+                        {/* Tiny Admin Badge in List */}
+                        {user.user_id === ADMIN_ID && <span className="ml-2 text-[10px] bg-yellow-500/20 text-yellow-400 px-1 rounded border border-yellow-500/50">👑</span>}
+                      </div>
                     </div>
                     <div className="col-span-2 text-center"><span className="bg-white/10 text-gray-300 px-2 py-1 rounded text-[10px] md:text-xs font-bold">{user.events_played}</span></div>
                     <div className="col-span-2 text-right"><span className={`text-lg md:text-xl font-bold ${rank === 1 ? 'text-yellow-400' : 'text-pink-400'}`}>{user.total_score}</span></div>

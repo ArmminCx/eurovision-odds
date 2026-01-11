@@ -23,6 +23,9 @@ export const translations = {
     loading: "Loading...",
     delete_confirm: "Are you sure you want to delete",
     no_video: "No video link added for this country yet!",
+    search_placeholder: "Search countries...",
+    sort_odds: "Sort by: Odds",
+    sort_alpha: "Sort by: A-Z",
 
     // Stream Page
     main_stage: "Currently watching on Main Stage",
@@ -49,6 +52,11 @@ export const translations = {
     locked: "LOCKED",
     view_stats: "View Statistics",
     
+    // Event Status (Predictions)
+    status_open: "OPEN",
+    status_locked: "OPENING SOON",
+    status_closed: "EVENT OVER",
+    
     // Prediction Stats/Spectate
     back_list: "← Back",
     back_finals: "← Back to Finals",
@@ -59,7 +67,7 @@ export const translations = {
     score: "Score:",
     prediction_by: "Prediction by",
     exact: "✓ Exact",
-    status_close: "Close",
+    status_close: "Close", // Used for game result (Close call)
     wrong: "Wrong",
     actual: "Actual:",
 
@@ -72,7 +80,19 @@ export const translations = {
     loading_scores: "Loading scores...",
     no_scores: "No points scored yet! Wait for results.",
 
-    // Help Modal (EXTENDED)
+    // User Profile & Badges
+    profile_title: "User Profile",
+    badges: "Badges",
+    stats: "Season Stats",
+    stat_score: "Total Score",
+    stat_events: "Events Played",
+    stat_accuracy: "Accuracy",
+    badge_admin: "Admin",
+    badge_veteran: "Veteran",
+    badge_oracle: "Oracle",
+    badge_newbie: "Newcomer",
+
+    // Help Modal
     help_title: "How to Play",
     help_betting_title: "💰 The Betting Market",
     help_betting_desc: "You start with 5 Tokens. Place them on countries you think will win Eurovision. The more people bet on a country, the lower the Odds (payout) become. If you change your mind, remove your vote to get the token back.",
@@ -82,7 +102,7 @@ export const translations = {
     help_calendar_desc: "Track all National Finals and events. Click the heart icons on the calendar to see details or watch links for that specific event.",
     help_leaderboard_title: "🏆 Season Leaderboard",
     help_leaderboard_desc: "Compete against the community! Points from all prediction games are summed up here to decide the ultimate Eurovision Expert.",
-    close_modal: "Close"
+    close_modal: "Close" // Used for buttons
   },
   ru: {
     // Navigation
@@ -108,6 +128,9 @@ export const translations = {
     loading: "Загрузка...",
     delete_confirm: "Вы уверены, что хотите удалить",
     no_video: "Ссылка на видео еще не добавлена!",
+    search_placeholder: "Поиск страны...",
+    sort_odds: "Сорт: Коэф.",
+    sort_alpha: "Сорт: А-Я",
 
     // Stream Page
     main_stage: "Сейчас на главном экране",
@@ -134,6 +157,11 @@ export const translations = {
     locked: "ЗАКРЫТО",
     view_stats: "Статистика",
 
+    // Event Status (Predictions)
+    status_open: "ОТКРЫТО",
+    status_locked: "СКОРО ОТКРЫТИЕ",
+    status_closed: "СОБЫТИЕ ЗАВЕРШЕНО",
+
     // Prediction Stats/Spectate
     back_list: "← Назад",
     back_finals: "← К списку",
@@ -144,7 +172,7 @@ export const translations = {
     score: "Очки:",
     prediction_by: "Прогноз от",
     exact: "✓ Точно",
-    status_close: "Близко",
+    status_close: "Близко", // Used for game result
     wrong: "Мимо",
     actual: "Факт:",
 
@@ -157,7 +185,19 @@ export const translations = {
     loading_scores: "Загрузка очков...",
     no_scores: "Пока нет очков! Ждем результатов.",
 
-    // Help Modal (EXTENDED)
+    // User Profile & Badges
+    profile_title: "Профиль",
+    badges: "Значки",
+    stats: "Статистика",
+    stat_score: "Общий счет",
+    stat_events: "Турниры",
+    stat_accuracy: "Точность",
+    badge_admin: "Админ",
+    badge_veteran: "Ветеран",
+    badge_oracle: "Оракул",
+    badge_newbie: "Новичок",
+
+    // Help Modal
     help_title: "Как играть",
     help_betting_title: "💰 Рынок Ставок",
     help_betting_desc: "У вас 5 жетонов. Ставьте их на страны, которые, по вашему мнению, выиграют. Чем больше ставок на страну, тем ниже коэффициенты. Вы можете снять ставку, чтобы вернуть жетон.",
@@ -167,6 +207,6 @@ export const translations = {
     help_calendar_desc: "Следите за всеми нацотборами. Нажимайте на сердечки в календаре, чтобы увидеть детали или ссылки на трансляции.",
     help_leaderboard_title: "🏆 Таблица Лидеров",
     help_leaderboard_desc: "Соревнуйтесь с сообществом! Очки за все прогнозы суммируются здесь, чтобы определить главного эксперта Евровидения.",
-    close_modal: "Закрыть"
+    close_modal: "Закрыть" // Used for buttons
   }
 }

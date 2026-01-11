@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "./context/LanguageContext";
-import { Toaster } from 'react-hot-toast'; // IMPORT THIS
+import { Toaster } from 'react-hot-toast';
+import BroadcastListener from "./components/BroadcastListener"; // IMPORT LISTENER
 
 export const metadata: Metadata = {
   title: "Eurovision Odds",
@@ -40,8 +41,11 @@ export default function RootLayout({
     <html lang="en">
       <body className="text-white">
         <LanguageProvider>
+          {/* THE GLOBAL LISTENER */}
+          <BroadcastListener />
+          
           {children}
-          {/* THE TOAST CONTAINER - Style it to match your glass theme */}
+          
           <Toaster 
             position="bottom-center"
             toastOptions={{
