@@ -9,7 +9,7 @@ import { useLanguage } from '@/app/context/LanguageContext'
 export default function TVPage() {
   const supabase = createClient()
   const { t, lang, toggleLanguage } = useLanguage()
-  const [liveUrl, setLiveUrl] = useState('')
+  const [liveUrl, setLiveUrl] = useState<string | null>(null) // Changed to null for safety
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [user, setUser] = useState<any>(null)
@@ -22,12 +22,15 @@ export default function TVPage() {
 
   useEffect(() => {
     async function init() {
+      // Fetch URL
       const { data } = await supabase.from('site_content').select('content').eq('key', 'live_tv_url').single()
       if (data) setLiveUrl(data.content)
       
+      // Fetch User
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       
+      // Fetch Chat
       const { data: msgs } = await supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(50)
       if (msgs) setMessages(msgs.reverse())
     }
@@ -57,7 +60,7 @@ export default function TVPage() {
   }
 
   // --- SMART URL PARSER ---
-  const getEmbedUrl = (url: string) => {
+  const getEmbedUrl = (url: string | null) => {
     if (!url) return ''
     if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/')
     if (url.includes('youtube.com/live/')) return url.replace('live/', 'embed/')
@@ -92,30 +95,35 @@ export default function TVPage() {
             </div>
         </div>
 
-        {/* CONTENT GRID - UPDATED LAYOUT */}
-        {/* Removed h-[80vh] so it fits content naturally. Used aspect-video to force 16:9 ratio */}
+        {/* CONTENT GRID */}
         <div className="max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
             
-            {/* LEFT: TV SCREEN (Now takes 3/4 of width for bigger view) */}
+            {/* LEFT: TV SCREEN */}
             <div className="lg:col-span-3 flex flex-col glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                 
-                {/* 16:9 Aspect Ratio Container - Keeps video perfect */}
                 <div className="w-full aspect-video relative bg-black">
-                    <iframe 
-                        src={getEmbedUrl(liveUrl)}
-                        className="absolute inset-0 w-full h-full" 
-                        allowFullScreen 
-                        allow="autoplay; encrypted-media; picture-in-picture"
-                    ></iframe>
+                    {/* Only render iframe if we have a URL */}
+                    {liveUrl ? (
+                        <iframe 
+                            src={getEmbedUrl(liveUrl)}
+                            className="absolute inset-0 w-full h-full" 
+                            allowFullScreen 
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                        ></iframe>
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-500 animate-pulse">
+                            Loading Stream...
+                        </div>
+                    )}
                 </div>
                 
                 <div className="p-3 bg-black/60 flex justify-between items-center text-xs text-gray-400">
                     <span>{t.stream_blocked}</span>
-                    <a href={liveUrl} target="_blank" className="text-pink-400 hover:text-white underline">{t.open_external}</a>
+                    {liveUrl && <a href={liveUrl} target="_blank" className="text-pink-400 hover:text-white underline">{t.open_external}</a>}
                 </div>
             </div>
 
-            {/* RIGHT: CHAT (Takes 1/4 of width, matches video height roughly) */}
+            {/* RIGHT: CHAT */}
             <div className="lg:col-span-1 flex flex-col glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl h-[500px] lg:h-auto">
                 <div className="p-4 border-b border-white/10 bg-black/40"><h2 className="font-bold text-white">{t.chat_title}</h2></div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar bg-black/20">

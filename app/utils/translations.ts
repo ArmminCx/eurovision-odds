@@ -2,7 +2,7 @@ export const translations = {
   en: {
     // Navigation
     nav_betting: "🏠 Betting",
-    nav_stream: "Epicstory",
+    nav_stream: "1epicstory", // UPDATED NAME
     nav_calendar: "📅 Calendar",
     nav_predict: "🔮 Predictions",
     nav_leaderboard: "🏆 Leaderboard",
@@ -40,7 +40,7 @@ export const translations = {
     save_rating: "Submit Votes",
 
     // Stream Page
-    main_stage: "Currently watching on Main Stage",
+    main_stage: "Currently watching",
     open_chat: "Open Chat ↗",
     more_streamers: "More Streamers",
     watch: "Watch",
@@ -127,7 +127,7 @@ export const translations = {
   },
   ru: {
     nav_betting: "🏠 Ставки",
-    nav_stream: "Эпикстори",
+    nav_stream: "1epicstory", // UPDATED NAME
     nav_calendar: "📅 Календарь",
     nav_predict: "🔮 Прогнозы",
     nav_leaderboard: "🏆 Таблица",
