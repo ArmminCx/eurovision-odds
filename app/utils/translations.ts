@@ -6,6 +6,7 @@ export const translations = {
     nav_calendar: "📅 Calendar",
     nav_predict: "🔮 Predictions",
     nav_leaderboard: "🏆 Leaderboard",
+    nav_tv: "📺 Live TV",
     
     // Auth & User
     login: "Login with Twitch",
@@ -27,14 +28,14 @@ export const translations = {
     sort_odds: "Sort by: Odds",
     sort_alpha: "Sort by: A-Z",
 
-    // Detailed Rating System (UPDATED)
+    // Detailed Rating System
     rate_button: "Rate Song",
     criteria_song: "Song Quality",
-    criteria_live: "Live Performance", // Fixed: Full name
+    criteria_live: "Live Performance",
     criteria_jury: "Jury Appeal",
     criteria_public: "Public Appeal",
     criteria_vocals: "Vocals",
-    criteria_staging: "Instrumentals", // Fixed: Changed from Staging
+    criteria_staging: "Instrumentals",
     your_avg: "Your Avg",
     save_rating: "Submit Votes",
 
@@ -68,7 +69,7 @@ export const translations = {
     status_locked: "OPENING SOON",
     status_closed: "EVENT OVER",
     
-    // Prediction Stats/Spectate
+    // Prediction Stats
     back_list: "← Back",
     back_finals: "← Back to Finals",
     leaderboard_title: "Predictions Leaderboard",
@@ -113,22 +114,29 @@ export const translations = {
     help_calendar_desc: "Track all National Finals and events. Click the heart icons on the calendar to see details or watch links for that specific event.",
     help_leaderboard_title: "🏆 Season Leaderboard",
     help_leaderboard_desc: "Compete against the community! Points from all prediction games are summed up here to decide the ultimate Eurovision Expert.",
+    
+    // Live TV
+    chat_title: "Live Chat",
+    chat_placeholder: "Say something...",
+    chat_send: "Send",
+    stream_blocked: "Stream not loading?",
+    open_external: "Watch on Official Site ↗",
+    current_date: "Today is",
+
     close_modal: "Close"
   },
   ru: {
-    // Navigation
     nav_betting: "🏠 Ставки",
     nav_stream: "Эпикстори",
     nav_calendar: "📅 Календарь",
     nav_predict: "🔮 Прогнозы",
     nav_leaderboard: "🏆 Таблица",
+    nav_tv: "📺 Прямой Эфир",
     
-    // Auth & User
     login: "Войти через Twitch",
     logout: "Выйти",
     user: "Пользователь",
     
-    // Home / Betting
     tokens_left: "Жетонов",
     odds: "КОЭФ.",
     avg: "Ср.",
@@ -143,31 +151,27 @@ export const translations = {
     sort_odds: "Сорт: Коэф.",
     sort_alpha: "Сорт: А-Я",
 
-    // Detailed Rating System (UPDATED)
     rate_button: "Оценить",
     criteria_song: "Качество песни",
-    criteria_live: "Выступление", // Updated
+    criteria_live: "Выступление",
     criteria_jury: "Жюри",
     criteria_public: "Зрители",
     criteria_vocals: "Вокал",
-    criteria_staging: "Инструментал", // Updated
+    criteria_staging: "Инструментал",
     your_avg: "Ваш ср.",
     save_rating: "Сохранить",
 
-    // Stream Page
     main_stage: "Сейчас на главном экране",
     open_chat: "Чат ↗",
     more_streamers: "Другие стримеры",
     watch: "Смотреть",
     swap: "Наверх ⬆",
 
-    // Calendar Page
     prev: "← Пред.",
     next: "След. →",
     delete_event_confirm: "Удалить событие",
     click_open: "Открыть ↗",
 
-    // Predictions Page
     select_final: "Выберите Нацотбор",
     no_finals: "Нет активных отборов.",
     change_final: "← Назад",
@@ -179,12 +183,10 @@ export const translations = {
     locked: "ЗАКРЫТО",
     view_stats: "Статистика",
 
-    // Event Status
     status_open: "ОТКРЫТО",
     status_locked: "СКОРО ОТКРЫТИЕ",
     status_closed: "СОБЫТИЕ ЗАВЕРШЕНО",
 
-    // Prediction Stats/Spectate
     back_list: "← Назад",
     back_finals: "← К списку",
     leaderboard_title: "Таблица прогнозов",
@@ -198,7 +200,6 @@ export const translations = {
     wrong: "Мимо",
     actual: "Факт:",
 
-    // Leaderboard Page
     championship: "Чемпионат Сезона",
     total_points: "Сумма очков за все отборы",
     rank: "Место",
@@ -207,7 +208,6 @@ export const translations = {
     loading_scores: "Загрузка очков...",
     no_scores: "Пока нет очков! Ждем результатов.",
 
-    // User Profile
     profile_title: "Профиль",
     badges: "Значки",
     stats: "Статистика",
@@ -219,7 +219,6 @@ export const translations = {
     badge_oracle: "Оракул",
     badge_newbie: "Новичок",
 
-    // Help Modal
     help_title: "Как играть",
     help_betting_title: "💰 Рынок Ставок",
     help_betting_desc: "У вас 5 жетонов. Ставьте их на страны, которые, по вашему мнению, выиграют. Чем больше ставок на страну, тем ниже коэффициенты. Вы можете снять ставку, чтобы вернуть жетон.",
@@ -229,6 +228,14 @@ export const translations = {
     help_calendar_desc: "Следите за всеми нацотборами. Нажимайте на сердечки в календаре, чтобы увидеть детали или ссылки на трансляции.",
     help_leaderboard_title: "🏆 Таблица Лидеров",
     help_leaderboard_desc: "Соревнуйтесь с сообществом! Очки за все прогнозы суммируются здесь, чтобы определить главного эксперта Евровидения.",
+
+    chat_title: "Чат",
+    chat_placeholder: "Напишите сообщение...",
+    chat_send: "Отпр.",
+    stream_blocked: "Не грузит?",
+    open_external: "Открыть сайт трансляции ↗",
+    current_date: "Сегодня",
+
     close_modal: "Закрыть"
   }
 }

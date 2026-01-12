@@ -64,7 +64,7 @@ function GraphModal({ countryId, countryName, allVotes, onClose }: { countryId: 
   )
 }
 
-// --- RATING MODAL (FOR ME TO RATE) ---
+// --- RATING MODAL ---
 function RatingModal({ country, currentRating, onClose, onSave, t }: { country: any, currentRating: any, onClose: () => void, onSave: (r: any) => void, t: any }) {
   const [c1, setC1] = useState(currentRating?.song_quality || 5)
   const [c2, setC2] = useState(currentRating?.live_performance || 5)
@@ -116,7 +116,7 @@ function RatingModal({ country, currentRating, onClose, onSave, t }: { country: 
   )
 }
 
-// --- READ ONLY RATING MODAL (VIEW OTHERS) ---
+// --- READ ONLY RATING MODAL ---
 function ReadOnlyRatingModal({ rating, onClose, t }: { rating: any, onClose: () => void, t: any }) {
     const average = ((rating.song_quality + rating.live_performance + rating.jury_appeal + rating.public_appeal + rating.vocals + rating.staging) / 6).toFixed(1)
   
@@ -153,7 +153,7 @@ function ReadOnlyRatingModal({ rating, onClose, t }: { rating: any, onClose: () 
     )
   }
 
-// --- RATING LIST MODAL (WHO RATED) ---
+// --- RATING LIST MODAL ---
 function RatingListModal({ country, onClose, t }: { country: any, onClose: () => void, t: any }) {
     const supabase = createClient()
     const [ratings, setRatings] = useState<any[]>([])
@@ -367,8 +367,9 @@ export default function Home() {
       setUser(user)
       const { data: mvList } = await supabase.from('votes').select('*').eq('user_id', user.id)
       if (mvList) setMyVotes(mvList)
+      // fetch MY ratings specifically to ensure we have them
       const { data: mrList } = await supabase.from('ratings').select('*').eq('user_id', user.id)
-      if (mrList) setMyRatings(mrList) // Used for My Score
+      if (mrList) setMyRatings(mrList)
     }
     setLoading(false)
   }
@@ -438,7 +439,11 @@ export default function Home() {
   const getAvgScore = (countryId: number) => {
     const relevantRatings = allRatings.filter(r => r.country_id === countryId)
     if (relevantRatings.length === 0) return "0.0"
+    
+    // Sum up the 'score' property of all ratings for this country
     const totalScore = relevantRatings.reduce((acc, curr) => acc + (curr.score || 0), 0)
+    
+    // Calculate mean
     const avg = totalScore / relevantRatings.length
     return avg.toFixed(1)
   }
@@ -474,6 +479,7 @@ export default function Home() {
         {showOnlineList && <OnlineUsersModal onClose={() => setShowOnlineList(false)} users={onlineUsers} />}
         {graphCountry && <GraphModal countryId={graphCountry.id} countryName={graphCountry.name} allVotes={allVotes} onClose={() => setGraphCountry(null)} />}
         
+        {/* NEW: RATING MODAL */}
         {ratingCountry && (
             <RatingModal 
                 country={ratingCountry} 
@@ -484,6 +490,7 @@ export default function Home() {
             />
         )}
 
+        {/* VIEW RATINGS LIST (VIEW OTHERS) */}
         {viewRatingList && (
             <RatingListModal country={viewRatingList} onClose={() => setViewRatingList(null)} t={t} />
         )}
@@ -493,10 +500,17 @@ export default function Home() {
           {/* NAV WITH LANGUAGE TOGGLE */}
           <div className="relative flex justify-center gap-4 md:gap-6 mb-8 border-b border-white/20 pb-4 flex-wrap">
             <Link href="/" className="px-4 py-2 text-white border-b-2 border-pink-500 font-bold text-lg md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
-            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
+            
+            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
+                <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
+                {t.nav_stream}
+            </Link>
+            
+            <Link href="/tv" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_tv}</Link>
             <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
             <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
             <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+            
             <div className="absolute right-0 top-0 flex items-center gap-2">
                 <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition" title="How to Play">?</button>
                 <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
@@ -507,21 +521,44 @@ export default function Home() {
                 <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
           </div>
 
-          {/* HEADER */}
+          {/* HEADER with MASSIVE CENTER LOGO */}
           <div className="relative flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 border-b border-white/20 pb-6 sticky top-0 bg-black/70 backdrop-blur-xl z-20 py-4 md:py-6 rounded-2xl px-6 min-h-[140px] shadow-2xl">
+            
+            {/* LEFT SIDE: Live Count & User */}
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto mb-4 md:mb-0 z-10">
-              <div onClick={() => setShowOnlineList(true)} className="glass px-4 py-1.5 rounded-full flex items-center gap-2 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)] cursor-pointer hover:bg-white/10 transition">
+              <div 
+                onClick={() => setShowOnlineList(true)}
+                className="glass px-4 py-1.5 rounded-full flex items-center gap-2 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.3)] cursor-pointer hover:bg-white/10 transition"
+              >
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,1)]"></div>
                 <span className="text-sm font-bold text-green-300 font-mono">{onlineUsers.length} Online</span>
               </div>
+              
               <p className="text-gray-300 text-sm font-bold text-white hidden md:block">{user.user_metadata.full_name}</p>
             </div>
+
+            {/* CENTER: LOGO - UPSCALED */}
             <div className="order-first md:absolute md:left-1/2 md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 mb-4 md:mb-0 z-0 pointer-events-none">
-                <Image src="/logo.png" alt="Eurovision" width={600} height={300} className="h-24 md:h-40 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] filter brightness-110" priority />
+                <Image 
+                    src="/logo.png" 
+                    alt="Eurovision" 
+                    width={600}
+                    height={300}
+                    className="h-24 md:h-40 w-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] filter brightness-110"
+                    priority
+                />
             </div>
+
+            {/* RIGHT SIDE: Admin, Logout, Tokens */}
             <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-end z-10">
-              {user.id === ADMIN_ID && <Link href="/admin"><button className="glass px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-white/20 flex items-center gap-2 shadow-lg">{t.admin_panel}</button></Link>}
+              {user.id === ADMIN_ID && (
+                <Link href="/admin">
+                  <button className="glass px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-white/20 flex items-center gap-2 shadow-lg">{t.admin_panel}</button>
+                </Link>
+              )}
               <button onClick={handleLogout} className="text-red-400 hover:text-red-300 text-sm font-bold underline transition hover:scale-105">{t.logout}</button>
+              
+              {/* TOKENS */}
               <div className="text-right pl-6 border-l border-white/20">
                 <div className={`text-3xl md:text-5xl font-mono font-bold ${tokensLeft === 0 ? 'text-gray-500' : 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]'}`}>{tokensLeft}</div>
                 <div className="text-xs text-gray-300 uppercase tracking-widest font-bold">{t.tokens_left}</div>
@@ -545,16 +582,15 @@ export default function Home() {
               const myVotesForThis = myVotes.filter(v => v.country_id === country.id).length
               const myRatingObj = myRatings.find(r => r.country_id === country.id)
               
-              const myScore = myRatingObj ? (
-                (
-                 (myRatingObj.song_quality || 5) + 
-                 (myRatingObj.live_performance || 5) + 
-                 (myRatingObj.jury_appeal || 5) + 
-                 (myRatingObj.public_appeal || 5) + 
-                 (myRatingObj.vocals || 5) + 
-                 (myRatingObj.staging || 5)
-                ) / 6
-              ).toFixed(1) : "0.0"
+              // Dynamic score calculation
+              const myScore = myRatingObj ? Math.round((
+                (myRatingObj.song_quality || 5) + 
+                (myRatingObj.live_performance || 5) + 
+                (myRatingObj.jury_appeal || 5) + 
+                (myRatingObj.public_appeal || 5) + 
+                (myRatingObj.vocals || 5) + 
+                (myRatingObj.staging || 5)
+              ) / 6).toFixed(1) : "0.0"
               
               const odds = getOddsValue(country.id).toFixed(2)
               const isFavorite = index === 0 && allVotes.length > 0 && !searchQuery
@@ -567,12 +603,20 @@ export default function Home() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   )}
+
                   <div className="h-24 md:h-32 w-full relative overflow-hidden cursor-pointer" onClick={() => videoId ? setPlayingVideo(videoId) : toast.error(t.no_video)}>
                      <img src={`https://flagcdn.com/w640/${country.code.toLowerCase()}.png`} alt={country.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500" />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 md:px-3 md:py-1 rounded text-white font-mono font-bold text-xs md:text-base border border-white/10">#{index + 1}</div>
-                     {videoId && <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300"><div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110"><svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>}
+                     {videoId && (
+                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                         <div className="bg-pink-600/90 rounded-full p-2 md:p-3 shadow-[0_0_20px_rgba(236,72,153,0.6)] transform scale-110">
+                           <svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                         </div>
+                       </div>
+                     )}
                   </div>
+
                   <div className="p-4 md:p-6 pt-0 relative -top-4 md:-top-6">
                     <div className="flex justify-between items-end mb-2">
                       <div>
@@ -584,8 +628,16 @@ export default function Home() {
                           <div className="text-right glass p-1 md:p-2 rounded-lg"><span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span><span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span></div>
                       </div>
                     </div>
-                    <p className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`} onClick={() => videoId && setPlayingVideo(videoId)} title={videoId ? "Click to Watch Video" : t.no_video}><span>♫ {country.song}</span>{videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}</p>
                     
+                    <p 
+                      className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`}
+                      onClick={() => videoId && setPlayingVideo(videoId)}
+                      title={videoId ? "Click to Watch Video" : t.no_video}
+                    >
+                      <span>♫ {country.song}</span>
+                      {videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}
+                    </p>
+
                     {/* NEW: RATING BUTTON AREA + CLICKABLE AVG */}
                     <div className="bg-black/30 p-2 md:p-3 rounded-lg mb-4 border border-white/5 flex items-center justify-between">
                       <div className="text-xs">

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import { useLanguage } from '@/app/context/LanguageContext'
 
@@ -24,25 +25,17 @@ export default function StreamPage() {
     <div className="min-h-screen p-2 md:p-8">
       <div className="max-w-6xl mx-auto">
         
-        {/* RESPONSIVE NAV */}
+        {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          
-          {/* EPICSTORY TAB (Active + Icon) */}
           <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition flex items-center gap-2">
-            {/* Using standard img tag to force load */}
-            <img 
-              src="/twitch.png" 
-              alt="Twitch" 
-              className="w-5 h-5 md:w-6 md:h-6 object-contain" 
-            />
+            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
             {t.nav_stream}
           </Link>
-          
+          <Link href="/tv" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_tv}</Link>
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
-          
           <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
         </div>
         <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
@@ -75,21 +68,16 @@ export default function StreamPage() {
         {/* SIDE STAGES */}
         <div className="border-t border-white/10 pt-6 md:pt-8">
           <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6 text-gray-300">{t.more_streamers}</h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {allChannels.map((channel) => {
               if (channel === mainChannel) return null
               return (
                 <div key={channel} className="glass rounded-lg overflow-hidden relative group">
-                  
-                  {/* Small Player */}
                   <div className="aspect-video relative bg-black">
                     <iframe
                       src={`https://player.twitch.tv/?channel=${channel}&parent=localhost&parent=eurovision-odds.vercel.app&muted=true`}
                       className="absolute top-0 left-0 w-full h-full pointer-events-none"
                     ></iframe>
-                    
-                    {/* Hover Overlay */}
                     <div 
                       onClick={() => handleSwap(channel)}
                       className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer backdrop-blur-sm"
@@ -99,7 +87,6 @@ export default function StreamPage() {
                       </button>
                     </div>
                   </div>
-
                   <div className="p-3 flex justify-between items-center bg-black/40">
                     <span className="font-bold text-gray-300 flex items-center gap-2 text-sm md:text-base">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -114,7 +101,6 @@ export default function StreamPage() {
             })}
           </div>
         </div>
-
       </div>
     </div>
   )
