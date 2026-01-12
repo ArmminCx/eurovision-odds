@@ -8,11 +8,11 @@
 
 body {
   color: white;
-  /* The Background Gradient */
   background: radial-gradient(circle at top left, #0f0c29 0%, #302b63 40%, #ff0055 100%);
   background-attachment: fixed;
   background-size: cover;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Glass Card Style */
@@ -26,4 +26,36 @@ body {
 .glass:hover {
   background: rgba(0, 0, 0, 0.6);
   border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ff0055;
+  border-radius: 4px;
+}
+
+/* NEW: Flying Animation (Crosses Full Screen) */
+@keyframes flyAcross {
+  0% { 
+    left: 100%; /* Start just outside right edge */
+    transform: translateX(0);
+  }
+  100% { 
+    left: 0; 
+    transform: translateX(-100vw); /* Move left by full screen width */
+  }
+}
+
+.animate-fly {
+  position: absolute;
+  white-space: nowrap;
+  animation: flyAcross 15s linear forwards; /* 15s to cross screen */
+  will-change: transform, left;
 }

@@ -328,8 +328,7 @@ export default function Home() {
   const [ratingCountry, setRatingCountry] = useState<any>(null)
   const [viewRatingList, setViewRatingList] = useState<any>(null)
   
-  // ⚠️ CHANGED TO 100 FOR TESTING
-  const MAX_TOKENS = 100 
+  const MAX_TOKENS = 5
 
   // --- 1. REAL-TIME PRESENCE ---
   useEffect(() => {
@@ -355,26 +354,21 @@ export default function Home() {
     return () => { supabase.removeChannel(channel) }
   }, [user]) 
 
-  // --- 2. DATA REFRESH (FIXED LOGIC HERE) ---
+  // --- 2. DATA REFRESH ---
   async function refreshData() {
     const { data: cList } = await supabase.from('countries').select('*').order('name')
     if (cList) setCountries(cList)
-    
-    // Fetch all votes/ratings
     const { data: vList } = await supabase.from('votes').select('*')
     if (vList) setAllVotes(vList)
     const { data: rList } = await supabase.from('ratings').select('*')
-    if (rList) setAllRatings(rList) // Store EVERYONE's ratings in allRatings
-
+    if (rList) setAllRatings(rList) // Used for AVG
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       setUser(user)
       const { data: mvList } = await supabase.from('votes').select('*').eq('user_id', user.id)
       if (mvList) setMyVotes(mvList)
-      
-      // FIXED: Specifically fetch MY ratings
       const { data: mrList } = await supabase.from('ratings').select('*').eq('user_id', user.id)
-      if (mrList) setMyRatings(mrList)
+      if (mrList) setMyRatings(mrList) // Used for My Score
     }
     setLoading(false)
   }
@@ -410,7 +404,6 @@ export default function Home() {
     } catch (e) { toast.error("Something went wrong") } finally { setIsVoting(false) }
   }
 
-  // --- SAVE RATING ---
   const handleRate = async (ratingData: any) => {
     if (!user || !ratingCountry) return
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture || user.user_metadata.profile_image_url
@@ -442,15 +435,10 @@ export default function Home() {
     return 1 / (count / total)
   }
 
-  // FIXED: CALCULATE ACTUAL GLOBAL AVERAGE
   const getAvgScore = (countryId: number) => {
     const relevantRatings = allRatings.filter(r => r.country_id === countryId)
     if (relevantRatings.length === 0) return "0.0"
-    
-    // Sum up the 'score' property of all ratings for this country
     const totalScore = relevantRatings.reduce((acc, curr) => acc + (curr.score || 0), 0)
-    
-    // Calculate mean
     const avg = totalScore / relevantRatings.length
     return avg.toFixed(1)
   }

@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from 'react-hot-toast';
-import BroadcastListener from "./components/BroadcastListener"; // IMPORT LISTENER
+import BroadcastListener from "./components/BroadcastListener";
+import ActivityTicker from "./components/ActivityTicker"; // IMPORT ADDED
 
 export const metadata: Metadata = {
   title: "Eurovision Odds",
@@ -41,19 +42,25 @@ export default function RootLayout({
     <html lang="en">
       <body className="text-white">
         <LanguageProvider>
-          {/* THE GLOBAL LISTENER */}
+          {/* GLOBAL LISTENERS & UI */}
           <BroadcastListener />
+          <ActivityTicker />  {/* NOW GLOBAL */}
           
           {children}
           
           <Toaster 
-            position="bottom-center"
+            position="top-center"
+            reverseOrder={false}
+            gutter={8}
+            containerStyle={{ top: 20 }}
             toastOptions={{
+              duration: 3000,
               style: {
-                background: '#333',
+                background: 'rgba(0, 0, 0, 0.8)',
                 color: '#fff',
                 border: '1px solid rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(10px)',
+                maxWidth: '400px',
               },
               success: {
                 iconTheme: { primary: '#4ade80', secondary: 'black' },
