@@ -425,7 +425,9 @@ export default function Home() {
     } catch (e) { toast.error("Something went wrong") } finally { setIsVoting(false) }
   }
 
+  // NOTE: removeVote is intentionally removed from UI to make votes permanent
   const removeVote = async (countryId: number) => {
+    // Left here just in case, but no UI triggers it
     if (isVoting) return
     const voteToRemove = myVotes.find(v => v.country_id === countryId)
     if (!voteToRemove) return
@@ -543,7 +545,6 @@ export default function Home() {
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,1)]"></div>
                 <span className="text-sm font-bold text-green-300 font-mono">{onlineUsers.length} Online</span>
               </div>
-              {/* FIXED: Removed text-gray-300 to clear conflict */}
               <p className="text-sm font-bold text-white hidden md:block">{user.user_metadata.full_name}</p>
             </div>
             <div className="order-first md:absolute md:left-1/2 md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 mb-4 md:mb-0 z-0 pointer-events-none">
@@ -633,11 +634,24 @@ export default function Home() {
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 md:gap-4">
-                      <button onClick={() => removeVote(country.id)} disabled={myVotesForThis === 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900/40 text-red-200 hover:bg-red-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(220,38,38,0.3)]">-</button>
-                      <div className="flex-1 text-center bg-black/40 rounded-lg py-1 md:py-2 border border-white/10"><span className="text-[10px] md:text-xs text-gray-500 block">{t.shares}</span><span className="text-xl md:text-2xl font-bold text-white">{myVotesForThis}</span></div>
-                      <button onClick={() => placeVote(country.id)} disabled={tokensLeft <= 0 || isVoting} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-green-900/40 text-green-200 hover:bg-green-600 disabled:opacity-20 font-bold text-lg md:text-xl transition shadow-[0_0_10px_rgba(22,163,74,0.3)]">+</button>
+                    {/* NEW LAYOUT: SHARES DISPLAY + BUY BUTTON ONLY */}
+                    <div className="flex items-center gap-3">
+                        {/* SHARES BOX (Takes available space) */}
+                        <div className="flex-1 bg-black/40 rounded-lg py-2 px-4 border border-white/10 flex justify-between items-center shadow-inner">
+                            <span className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-widest">{t.shares}</span>
+                            <span className="text-xl md:text-2xl font-bold text-white drop-shadow-md">{myVotesForThis}</span>
+                        </div>
+
+                        {/* BIG GREEN BUY BUTTON */}
+                        <button 
+                            onClick={() => placeVote(country.id)} 
+                            disabled={tokensLeft <= 0 || isVoting} 
+                            className="bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-lg font-bold text-xl md:text-2xl shadow-[0_0_15px_rgba(22,163,74,0.4)] disabled:opacity-40 disabled:cursor-not-allowed transition transform active:scale-95 border border-green-500/50"
+                        >
+                            +
+                        </button>
                     </div>
+
                   </div>
                 </div>
               )
