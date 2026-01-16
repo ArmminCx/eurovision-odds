@@ -6,7 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { User } from '@supabase/supabase-js'
 import { useLanguage } from '@/app/context/LanguageContext'
-import confetti from 'canvas-confetti' // Make sure confetti is imported for the save action
+import toast from 'react-hot-toast'
+import confetti from 'canvas-confetti'
 
 // ⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
@@ -145,31 +146,17 @@ export default function PredictionsPage() {
   const savePrediction = async () => {
     if (!user || !selectedFinal) return
     setLoading(true)
-
-    // SECURITY CHECK
     if (user.id !== ADMIN_ID) {
-      // FIX: Request 'status' instead of 'is_open' to fix TS error
       const { data: currentStatus } = await supabase.from('national_finals').select('status').eq('id', selectedFinal.id).single()
-      
       if (currentStatus?.status !== 'open') {
         alert("⛔ VOTING CLOSED!")
         setLoading(false); setSelectedFinal({ ...selectedFinal, status: currentStatus?.status }); return
       }
     }
-    
-    // REAL-TIME LOCK LISTENER
     const channel = supabase.channel('final_lock')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'national_finals', filter: `id=eq.${selectedFinal.id}` }, (payload) => {
         setSelectedFinal(payload.new)
       }).subscribe()
-    
-    // --- CONFETTI ANIMATION ---
-    const end = Date.now() + 1000; const colors = ['#ec4899', '#ffffff'];
-    (function frame() {
-        confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
-        confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
-        if (Date.now() < end) requestAnimationFrame(frame);
-    }());
 
     await supabase.from('user_rankings').delete().eq('user_id', user.id).eq('final_id', selectedFinal.id)
     const avatar = user.user_metadata.avatar_url || user.user_metadata.picture
@@ -183,28 +170,20 @@ export default function PredictionsPage() {
   const handleDeleteFinal = async (e: React.MouseEvent, id: number, name: string) => {
     e.stopPropagation()
     if (!confirm(`${t.delete_confirm} ${name}?`)) return
-    
-    const { error } = await supabase.from('national_finals').delete().eq('id', id)
-
-    if (error) {
-        alert(`Error: ${error.message}`)
-    } else {
-        window.location.reload()
-    }
+    await supabase.from('national_finals').delete().eq('id', id) // Cascade handles the rest
+    window.location.reload()
   }
 
   const handleToggleStatus = async (e: React.MouseEvent, id: number, status: boolean) => {
     e.stopPropagation(); await supabase.from('national_finals').update({ is_open: !status }).eq('id', id); fetchFinals()
   }
-  
-  // FIXED: Renamed to match the new cycle logic (Open -> Locked -> Closed)
+
   const handleCycleStatus = async (e: React.MouseEvent, id: number, currentStatus: string) => {
     e.stopPropagation()
     let nextStatus = 'locked'
     if (!currentStatus || currentStatus === 'locked') nextStatus = 'open'
     else if (currentStatus === 'open') nextStatus = 'closed'
     else if (currentStatus === 'closed') nextStatus = 'locked'
-
     await supabase.from('national_finals').update({ status: nextStatus }).eq('id', id)
     fetchFinals()
   }
@@ -216,17 +195,45 @@ export default function PredictionsPage() {
     await supabase.from('final_participants').update({ actual_rank: rank }).eq('id', participantId)
   }
 
+  // --- NEW: AWARD PRIZES (ADMIN ONLY) ---
+  const handleAwardPrizes = async () => {
+    if (!confirm("Are you sure? This will give TOKENS to the top 5 users.")) return
+    
+    // Sort predictors by score to find Top 5
+    // NOTE: Predictors list is already sorted by score in loadPredictors()
+    const winners = predictors.slice(0, 5)
+    
+    if (winners.length === 0) {
+        toast.error("No winners to award.")
+        return
+    }
+
+    const prizes = [5, 4, 3, 2, 1] // 1st=5, 2nd=4...
+    
+    for (let i = 0; i < winners.length; i++) {
+        const winner = winners[i]
+        const amount = prizes[i] || 1 // Fallback to 1 if > 5th place (shouldn't happen with slice)
+        
+        await supabase.from('token_rewards').insert({
+            user_id: winner.user_id,
+            amount: amount,
+            reason: `${selectedFinal.name} #${i+1}`
+        })
+    }
+    
+    toast.success(`🎁 Awarded tokens to ${winners.length} winners!`)
+    confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } })
+  }
+
   return (
     <div className="min-h-screen p-2 md:p-8">
       <div className="max-w-4xl mx-auto">
         
         {/* NAV */}
-        <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
+        <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 md:gap-6 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2">
-            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
-            {t.nav_stream}
-          </Link>
+          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
+          <Link href="/tv" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_tv}</Link>
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
@@ -241,7 +248,7 @@ export default function PredictionsPage() {
             {finals.length === 0 && <p className="text-center text-gray-500">{t.no_finals}</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {finals.map(final => {
-                const isAdmin = user?.id === ADMIN_ID
+                const isAdmin = user?.id === ADMIN_ID; 
                 const status = final.status || 'locked'
                 const canEnter = status === 'open' || isAdmin 
                 
@@ -310,13 +317,26 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* VIEW 3: STATS */}
+        {/* VIEW 3: STATS (Leaderboard) */}
         {view === 'STATS' && (
           <div>
-            <div className="flex items-center gap-4 mb-6">
-              <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold">{t.back_list}</button>
-              <h1 className="text-xl md:text-2xl font-bold">{t.leaderboard_title}</h1>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold">{t.back_list}</button>
+                <h1 className="text-xl md:text-2xl font-bold">{t.leaderboard_title}</h1>
+              </div>
+              
+              {/* --- AWARD PRIZES BUTTON (ADMIN ONLY) --- */}
+              {user?.id === ADMIN_ID && predictors.length > 0 && (
+                <button 
+                    onClick={handleAwardPrizes}
+                    className="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center gap-2"
+                >
+                    🎁 Award Prizes
+                </button>
+              )}
             </div>
+
             {loading ? <p>{t.loading}</p> : (
               <div className="grid grid-cols-1 gap-3">
                 {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {

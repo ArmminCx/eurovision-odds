@@ -17,14 +17,6 @@ export default function AdminPage() {
   const [broadcastMsg, setBroadcastMsg] = useState('')
   const [tvUrl, setTvUrl] = useState('')
 
-  useEffect(() => {
-    async function loadTv() {
-        const { data } = await supabase.from('site_content').select('content').eq('key', 'live_tv_url').single()
-        if (data) setTvUrl(data.content)
-    }
-    loadTv()
-  }, [])
-
   // HANDLERS
   const handleAddCountry = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setMessage('')
@@ -64,11 +56,39 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  const handleSetTv = async (e: React.FormEvent) => {
+  // --- UPDATED: ADDS URL TO LIST INSTEAD OF REPLACING ---
+  const handleAddStream = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true)
-    // USING UPSERT TO CREATE OR UPDATE
-    const { error } = await supabase.from('site_content').upsert({ key: 'live_tv_url', content: tvUrl })
-    if (error) toast.error("Failed: " + error.message); else toast.success("TV URL Updated!")
+    
+    // 1. Get current streams
+    const { data } = await supabase.from('site_content').select('content').eq('key', 'live_tv_url').single()
+    let currentStreams: string[] = []
+    
+    try {
+        if (data?.content) {
+            // Try to parse array, if it's a single string, make it an array
+            currentStreams = JSON.parse(data.content)
+            if (!Array.isArray(currentStreams)) currentStreams = [data.content]
+        }
+    } catch {
+        // If it was just a plain string before, recover it
+        if (data?.content) currentStreams = [data.content]
+    }
+
+    // 2. Add new stream
+    const updatedStreams = [...currentStreams, tvUrl]
+
+    // 3. Save back as JSON
+    const { error } = await supabase.from('site_content').upsert({ 
+        key: 'live_tv_url', 
+        content: JSON.stringify(updatedStreams) 
+    })
+
+    if (error) toast.error("Failed: " + error.message); 
+    else { 
+        toast.success("Stream Added!"); 
+        setTvUrl(''); // Clear input
+    }
     setLoading(false)
   }
 
@@ -123,9 +143,9 @@ export default function AdminPage() {
         )}
 
         {mode === 'TV' && (
-            <form onSubmit={handleSetTv} className="flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-blue-400 border-b border-blue-900 pb-2">Set Live TV URL</h2>
-                <p className="text-sm text-gray-400">Supported: YouTube Live, YouTube Video, Twitch. Others may open in new tab.</p>
+            <form onSubmit={handleAddStream} className="flex flex-col gap-4">
+                <h2 className="text-xl font-bold text-blue-400 border-b border-blue-900 pb-2">Add Live Stream</h2>
+                <p className="text-sm text-gray-400">Add multiple links to show multiple screens. Delete them from the TV page.</p>
                 <input 
                     type="text" 
                     value={tvUrl} 
@@ -134,7 +154,7 @@ export default function AdminPage() {
                     className="w-full bg-black border border-blue-500/50 rounded p-4 text-white focus:outline-none"
                     required
                 />
-                <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mt-2">💾 Update Screen</button>
+                <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mt-2">➕ Add Stream</button>
             </form>
         )}
 

@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
 import UserProfileModal from '@/app/components/UserProfileModal'
 
-// ⚠️ YOUR ADMIN ID
+//⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 
 export default function LeaderboardPage() {
@@ -52,6 +52,13 @@ export default function LeaderboardPage() {
         <div className="text-center mb-6 md:mb-10">
           <h1 className="text-2xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 mb-2">{t.championship}</h1>
           <p className="text-gray-400 text-sm md:text-base">{t.total_points}</p>
+
+          {/* NEW: PRIZE ANNOUNCEMENT BANNER */}
+          <div className="mt-6 inline-block bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 border border-yellow-500/50 rounded-lg px-6 py-3 shadow-[0_0_15px_rgba(234,179,8,0.2)] max-w-lg mx-auto">
+            <p className="text-yellow-200 font-bold text-sm md:text-base animate-pulse">
+              {t.prize_message}
+            </p>
+          </div>
         </div>
 
         <div className="glass rounded-xl border border-white/10 shadow-xl overflow-hidden">

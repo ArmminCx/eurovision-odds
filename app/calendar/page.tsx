@@ -7,7 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
 
-// ⚠️ YOUR ADMIN ID
+//⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 
 export default function CalendarPage() {
@@ -52,7 +52,8 @@ export default function CalendarPage() {
     setCurrentDate(new Date(newDate))
   }
 
-  const heartPath = "path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z')"
+  // The Heart Path (Standard 24x24 grid)
+  const heartPathData = "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z";
 
   return (
     <div className="min-h-screen p-2 md:p-8">
@@ -61,7 +62,6 @@ export default function CalendarPage() {
         {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          
           <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2">
             <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
             {t.nav_stream}
@@ -70,7 +70,6 @@ export default function CalendarPage() {
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
           <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
-          
           <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
         </div>
         <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
@@ -92,7 +91,7 @@ export default function CalendarPage() {
 
             <div className="grid grid-cols-7 gap-2">
               {Array.from({ length: adjustedFirstDay }).map((_, i) => (
-                <div key={`empty-${i}`} className="bg-white/5 h-24 md:h-32 rounded-lg border border-white/5"></div>
+                <div key={`empty-${i}`} className="bg-white/5 min-h-[100px] md:min-h-[140px] rounded-lg border border-white/5"></div>
               ))}
 
               {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -104,28 +103,56 @@ export default function CalendarPage() {
                 })
 
                 return (
-                  <div key={dayNum} className={`glass h-24 md:h-32 rounded-lg p-1 md:p-2 relative ${isToday ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}>
-                    <span className={`text-xs md:text-sm font-bold ${isToday ? 'text-pink-400' : 'text-gray-500'}`}>{dayNum}</span>
-                    <div className="flex flex-wrap gap-1 mt-1 justify-center">
+                  // ADDED: hover:z-50 to the Day Cell itself. This brings the whole day box to the front on hover.
+                  <div 
+                    key={dayNum} 
+                    className={`glass min-h-[100px] md:min-h-[140px] rounded-lg p-2 relative flex flex-col hover:z-50 transition-all ${isToday ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}
+                  >
+                    <span className={`text-xs md:text-sm font-bold mb-1 ${isToday ? 'text-pink-400' : 'text-gray-500'}`}>{dayNum}</span>
+                    
+                    {/* Event Container */}
+                    <div className="flex flex-wrap gap-2 justify-center content-center flex-1">
                       {daysEvents.map(event => (
                         <div key={event.id} className="group relative">
                           {user?.id === ADMIN_ID && (
                             <button 
                               onClick={(e) => { e.preventDefault(); handleDeleteEvent(event.id, event.title); }}
-                              className="absolute -top-3 -right-3 z-30 bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition"
+                              className="absolute -top-2 -right-2 z-30 bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition"
                             >✕</button>
                           )}
+                          
+                          {/* SVG HEART - Size: w-8 (mobile) / w-10 (desktop) */}
                           <a 
                             href={event.link || '#'} target="_blank" rel="noopener noreferrer"
-                            className={`block w-6 h-6 md:w-8 md:h-8 transition transform group-hover:scale-110 ${event.link ? 'cursor-pointer' : 'cursor-default'}`}
+                            className={`block w-8 h-8 md:w-10 md:h-10 transition transform hover:scale-110 hover:z-10 ${event.link ? 'cursor-pointer' : 'cursor-default'}`}
                             onClick={(e) => !event.link && e.preventDefault()}
                           >
-                            <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(https://flagcdn.com/w80/${event.country_code.toLowerCase()}.png)`, clipPath: heartPath, backgroundColor: 'white' }}></div>
+                            <svg 
+                              viewBox="0 0 24 24" 
+                              className="w-full h-full drop-shadow-lg"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <defs>
+                                <clipPath id={`heartClip-${event.id}`}>
+                                  <path d={heartPathData} />
+                                </clipPath>
+                              </defs>
+                              <image 
+                                href={`https://flagcdn.com/w160/${event.country_code.toLowerCase()}.png`} 
+                                width="24" 
+                                height="24" 
+                                clipPath={`url(#heartClip-${event.id})`}
+                                preserveAspectRatio="xMidYMid slice" 
+                              />
+                              <path d={heartPathData} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
+                            </svg>
                           </a>
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 md:w-48 bg-black/90 p-2 md:p-3 rounded-lg border border-purple-500 text-[10px] md:text-xs shadow-xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-20">
-                            <div className="font-bold text-white mb-1">{event.title}</div>
-                            <div className="text-gray-300">{event.description}</div>
-                            {event.link && <div className="text-blue-400 mt-1">{t.click_open}</div>}
+
+                          {/* Hover Tooltip - High Z-Index + Backdrop Blur */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 md:w-48 bg-black/95 p-2 md:p-3 rounded-xl border border-purple-500/50 text-[10px] md:text-xs shadow-2xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-[100] backdrop-blur-xl">
+                            <div className="font-bold text-white mb-1 text-center">{event.title}</div>
+                            <div className="text-gray-400 text-center">{event.description}</div>
+                            {event.link && <div className="text-blue-400 mt-1 text-center font-bold">{t.click_open}</div>}
                           </div>
                         </div>
                       ))}

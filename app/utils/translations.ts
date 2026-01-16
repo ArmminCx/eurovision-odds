@@ -2,7 +2,7 @@ export const translations = {
   en: {
     // Navigation
     nav_betting: "🏠 Betting",
-    nav_stream: "1epicstory", // UPDATED NAME
+    nav_stream: "1epicstory",
     nav_calendar: "📅 Calendar",
     nav_predict: "🔮 Predictions",
     nav_leaderboard: "🏆 Leaderboard",
@@ -91,6 +91,7 @@ export const translations = {
     points: "Points",
     loading_scores: "Loading scores...",
     no_scores: "No points scored yet! Wait for results.",
+    prize_message: "🏆 The player with the most points at the end of the season wins €100!",
 
     // User Profile
     profile_title: "User Profile",
@@ -127,7 +128,7 @@ export const translations = {
   },
   ru: {
     nav_betting: "🏠 Ставки",
-    nav_stream: "1epicstory", // UPDATED NAME
+    nav_stream: "1epicstory",
     nav_calendar: "📅 Календарь",
     nav_predict: "🔮 Прогнозы",
     nav_leaderboard: "🏆 Таблица",
@@ -207,6 +208,7 @@ export const translations = {
     points: "Очки",
     loading_scores: "Загрузка очков...",
     no_scores: "Пока нет очков! Ждем результатов.",
+    prize_message: "🏆 Игрок, набравший больше всех очков в конце сезона, получит 100€!",
 
     profile_title: "Профиль",
     badges: "Значки",

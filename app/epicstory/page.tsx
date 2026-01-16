@@ -15,7 +15,7 @@ export default function StreamPage() {
     '1epicstory', 
     'eurovision', 
     'wiwibloggs', 
-    'esc_gabriel'
+    'usb_229'
   ] 
 
   const handleSwap = (channel: string) => {
