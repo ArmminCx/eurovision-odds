@@ -8,8 +8,9 @@ import { User } from '@supabase/supabase-js'
 import { useLanguage } from '@/app/context/LanguageContext'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts'
 
-// ⚠️ YOUR ADMIN ID
+//⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
 
 type ViewMode = 'LIST' | 'GAME' | 'STATS' | 'SPECTATE'
@@ -25,6 +26,9 @@ export default function PredictionsPage() {
   const [predictors, setPredictors] = useState<any[]>([])
   const [spectatorList, setSpectatorList] = useState<any[]>([])
   const [spectatorName, setSpectatorName] = useState('')
+  
+  // Graph Data
+  const [communityStats, setCommunityStats] = useState<any[]>([])
 
   // State
   const [view, setView] = useState<ViewMode>('LIST')
@@ -89,21 +93,23 @@ export default function PredictionsPage() {
 
   const loadPredictors = async (finalId: number) => {
     setLoading(true)
+    const { data: participantsData } = await supabase.from('final_participants').select('*').eq('final_id', finalId)
     const { data: results } = await supabase.from('final_participants').select('id, actual_rank').eq('final_id', finalId)
     const resultMap = new Map(); results?.forEach(r => { if(r.actual_rank) resultMap.set(r.id, r.actual_rank) })
     const hasResults = resultMap.size > 0
     const { data } = await supabase.from('user_rankings').select('user_id, username, avatar_url, created_at, participant_id, rank_position').eq('final_id', finalId)
-    if (data) {
+    
+    if (data && participantsData) {
       const userMap = new Map()
+      const songStatsMap = new Map()
+
+      participantsData.forEach(p => {
+          songStatsMap.set(p.id, { info: p, rankSum: 0, count: 0 })
+      })
+
       data.forEach(row => {
         if (!userMap.has(row.user_id)) userMap.set(row.user_id, { 
-            user_id: row.user_id, 
-            username: row.username, 
-            avatar_url: row.avatar_url, 
-            created_at: row.created_at, 
-            score: 0, 
-            isRanked: hasResults,
-            displayRank: 0 
+            user_id: row.user_id, username: row.username, avatar_url: row.avatar_url, created_at: row.created_at, score: 0, isRanked: hasResults, displayRank: 0 
         })
         if (hasResults) {
           const actual = resultMap.get(row.participant_id)
@@ -113,7 +119,13 @@ export default function PredictionsPage() {
             else if (diff === 1) userMap.get(row.user_id).score += 1
           }
         }
+        if (songStatsMap.has(row.participant_id)) {
+            const stat = songStatsMap.get(row.participant_id)
+            stat.rankSum += row.rank_position
+            stat.count += 1
+        }
       })
+
       const list = Array.from(userMap.values())
       if (hasResults) {
         list.sort((a: any, b: any) => b.score - a.score)
@@ -131,6 +143,21 @@ export default function PredictionsPage() {
         list.forEach((item: any, i) => item.displayRank = i + 1)
       }
       setPredictors(list)
+
+      const totalSongs = participantsData.length
+      const graphData = Array.from(songStatsMap.values()).map((s: any) => {
+          const avgRank = s.count > 0 ? (s.rankSum / s.count) : totalSongs
+          const powerScore = (totalSongs + 1) - avgRank
+          return {
+              name: s.info.artist,
+              song: s.info.song,
+              avgRank: avgRank.toFixed(1),
+              powerScore: powerScore,
+              count: s.count
+          }
+      })
+      graphData.sort((a, b) => parseFloat(a.avgRank) - parseFloat(b.avgRank))
+      setCommunityStats(graphData)
     }
     setLoading(false)
   }
@@ -170,12 +197,8 @@ export default function PredictionsPage() {
   const handleDeleteFinal = async (e: React.MouseEvent, id: number, name: string) => {
     e.stopPropagation()
     if (!confirm(`${t.delete_confirm} ${name}?`)) return
-    await supabase.from('national_finals').delete().eq('id', id) // Cascade handles the rest
+    await supabase.from('national_finals').delete().eq('id', id)
     window.location.reload()
-  }
-
-  const handleToggleStatus = async (e: React.MouseEvent, id: number, status: boolean) => {
-    e.stopPropagation(); await supabase.from('national_finals').update({ is_open: !status }).eq('id', id); fetchFinals()
   }
 
   const handleCycleStatus = async (e: React.MouseEvent, id: number, currentStatus: string) => {
@@ -195,39 +218,23 @@ export default function PredictionsPage() {
     await supabase.from('final_participants').update({ actual_rank: rank }).eq('id', participantId)
   }
 
-  // --- NEW: AWARD PRIZES (ADMIN ONLY) ---
   const handleAwardPrizes = async () => {
     if (!confirm("Are you sure? This will give TOKENS to the top 5 users.")) return
-    
-    // Sort predictors by score to find Top 5
-    // NOTE: Predictors list is already sorted by score in loadPredictors()
     const winners = predictors.slice(0, 5)
-    
-    if (winners.length === 0) {
-        toast.error("No winners to award.")
-        return
-    }
-
-    const prizes = [5, 4, 3, 2, 1] // 1st=5, 2nd=4...
-    
+    if (winners.length === 0) { toast.error("No winners to award."); return }
+    const prizes = [5, 4, 3, 2, 1] 
     for (let i = 0; i < winners.length; i++) {
         const winner = winners[i]
-        const amount = prizes[i] || 1 // Fallback to 1 if > 5th place (shouldn't happen with slice)
-        
-        await supabase.from('token_rewards').insert({
-            user_id: winner.user_id,
-            amount: amount,
-            reason: `${selectedFinal.name} #${i+1}`
-        })
+        const amount = prizes[i] || 1 
+        await supabase.from('token_rewards').insert({ user_id: winner.user_id, amount: amount, reason: `${selectedFinal.name} #${i+1}` })
     }
-    
     toast.success(`🎁 Awarded tokens to ${winners.length} winners!`)
     confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } })
   }
 
   return (
     <div className="min-h-screen p-2 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         
         {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 md:gap-6 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
@@ -267,9 +274,7 @@ export default function PredictionsPage() {
                       </div>
                       <span className="text-xs text-gray-400">{final.event_time}</span>
                     </div>
-                    
                     <button onClick={(e) => openStats(final, e)} className="w-10 h-10 rounded-full bg-blue-900/50 hover:bg-blue-600 text-blue-200 flex items-center justify-center transition z-20 border border-blue-700/50">📊</button>
-                    
                     {isAdmin && (
                       <div className="flex gap-2 ml-2">
                         <button onClick={(e) => handleCycleStatus(e, final.id, status)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold border bg-gray-700 hover:bg-gray-600">{status === 'open' ? '🔓' : status === 'locked' ? '🟠' : '🔒'}</button>
@@ -317,7 +322,7 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* VIEW 3: STATS (Leaderboard) */}
+        {/* VIEW 3: STATS (Leaderboard + Graph) */}
         {view === 'STATS' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -325,44 +330,88 @@ export default function PredictionsPage() {
                 <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold">{t.back_list}</button>
                 <h1 className="text-xl md:text-2xl font-bold">{t.leaderboard_title}</h1>
               </div>
-              
-              {/* --- AWARD PRIZES BUTTON (ADMIN ONLY) --- */}
               {user?.id === ADMIN_ID && predictors.length > 0 && (
-                <button 
-                    onClick={handleAwardPrizes}
-                    className="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center gap-2"
-                >
-                    🎁 Award Prizes
-                </button>
+                <button onClick={handleAwardPrizes} className="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center gap-2">🎁 Award Prizes</button>
               )}
             </div>
 
-            {loading ? <p>{t.loading}</p> : (
-              <div className="grid grid-cols-1 gap-3">
-                {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {
-                  const rank = p.displayRank || idx + 1
-                  let cardStyle = "glass border-white/10 hover:border-pink-500"
-                  let rankDisplay = <span className="font-mono text-gray-500 font-bold w-8 text-center">{rank}.</span>
-
-                  if (p.isRanked) {
-                    if (rank === 1) { cardStyle = "bg-yellow-900/30 border-yellow-500"; rankDisplay = <span className="text-2xl w-8 text-center">🥇</span> }
-                    else if (rank === 2) { cardStyle = "bg-slate-800 border-slate-400"; rankDisplay = <span className="text-2xl w-8 text-center">🥈</span> }
-                    else if (rank === 3) { cardStyle = "bg-orange-900/30 border-orange-600"; rankDisplay = <span className="text-2xl w-8 text-center">🥉</span> }
-                  }
-                  return (
-                    <div key={p.user_id} onClick={() => openSpectate(p.user_id, p.username)} className={`p-4 rounded-lg flex justify-between items-center cursor-pointer border transition ${cardStyle}`}>
-                      <div className="flex items-center gap-4">
-                        {rankDisplay}
-                        {p.avatar_url ? <img src={p.avatar_url} className="w-10 h-10 rounded-full border-2 border-white/10" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
-                        <div>
-                          <div className="font-bold text-white text-sm md:text-base">{p.username || 'Unknown'}</div>
-                          <div className="text-xs text-gray-400">{p.isRanked ? <span className="text-yellow-400 font-bold">{t.score} {p.score} pts</span> : <span>{t.submitted} {new Date(p.created_at).toLocaleDateString()}</span>}</div>
+            {loading ? <p className="text-center text-gray-500">{t.loading}</p> : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* LEFT: COMMUNITY PREDICTION GRAPH (CUSTOM TOOLTIP) */}
+                <div className="glass p-6 rounded-xl border border-white/10 shadow-lg order-2 lg:order-1">
+                    <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-white/10 pb-2">📊 Community Consensus</h3>
+                    {communityStats.length > 0 ? (
+                        <div className="h-[500px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={communityStats} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fill: '#aaa', fontSize: 10 }} />
+                                    {/* UPDATED: Custom Tooltip with Song & Score */}
+                                    <Tooltip
+                                        cursor={{fill: 'transparent'}}
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload
+                                                return (
+                                                    <div className="bg-black/95 p-3 rounded-lg border border-pink-500/30 shadow-xl backdrop-blur-md z-50 min-w-[180px]">
+                                                        <p className="font-bold text-white text-base">{data.name}</p>
+                                                        <p className="text-pink-400 text-sm italic mb-2">"{data.song}"</p>
+                                                        <div className="border-t border-white/10 pt-2">
+                                                            <p className="text-gray-300 text-xs flex justify-between">
+                                                                <span>Avg Rank:</span> 
+                                                                <span className="text-yellow-400 font-bold">{data.avgRank}</span>
+                                                            </p>
+                                                            <p className="text-gray-500 text-[10px] uppercase tracking-wide mt-1 text-right">{data.count} Predictions</p>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }
+                                            return null
+                                        }}
+                                    />
+                                    <Bar dataKey="powerScore" radius={[0, 4, 4, 0]}>
+                                        {communityStats.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={index === 0 ? '#ec4899' : index === 1 ? '#a855f7' : '#4b5563'} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <p className="text-center text-xs text-gray-500 mt-2">Bars show predicted success (Longer = Better Avg Rank)</p>
                         </div>
-                      </div>
-                      <span className="text-pink-400 text-sm font-bold">{t.view}</span>
-                    </div>
-                  )
-                })}
+                    ) : (
+                        <p className="text-gray-500 text-center py-10">Not enough data yet.</p>
+                    )}
+                </div>
+
+                {/* RIGHT: USER LEADERBOARD */}
+                <div className="order-1 lg:order-2">
+                    {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {
+                    const rank = p.displayRank || idx + 1
+                    let cardStyle = "glass border-white/10 hover:border-pink-500 mb-3"
+                    let rankDisplay = <span className="font-mono text-gray-500 font-bold w-8 text-center">{rank}.</span>
+
+                    if (p.isRanked) {
+                        if (rank === 1) { cardStyle = "bg-yellow-900/30 border-yellow-500 mb-3"; rankDisplay = <span className="text-2xl w-8 text-center">🥇</span> }
+                        else if (rank === 2) { cardStyle = "bg-slate-800 border-slate-400 mb-3"; rankDisplay = <span className="text-2xl w-8 text-center">🥈</span> }
+                        else if (rank === 3) { cardStyle = "bg-orange-900/30 border-orange-600 mb-3"; rankDisplay = <span className="text-2xl w-8 text-center">🥉</span> }
+                    }
+                    return (
+                        <div key={p.user_id} onClick={() => openSpectate(p.user_id, p.username)} className={`p-4 rounded-lg flex justify-between items-center cursor-pointer border transition ${cardStyle}`}>
+                        <div className="flex items-center gap-4">
+                            {rankDisplay}
+                            {p.avatar_url ? <img src={p.avatar_url} className="w-10 h-10 rounded-full border-2 border-white/10" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
+                            <div>
+                            <div className="font-bold text-white text-sm md:text-base">{p.username || 'Unknown'}</div>
+                            <div className="text-xs text-gray-400">{p.isRanked ? <span className="text-yellow-400 font-bold">{t.score} {p.score} pts</span> : <span>{t.submitted} {new Date(p.created_at).toLocaleDateString()}</span>}</div>
+                            </div>
+                        </div>
+                        <span className="text-pink-400 text-sm font-bold">{t.view}</span>
+                        </div>
+                    )
+                    })}
+                </div>
               </div>
             )}
           </div>

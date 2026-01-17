@@ -128,14 +128,13 @@ export default function TVPage() {
 
   return (
     <>
-        {/* --- PRIVATE TRANSLATOR (Visible on top of everything) --- */}
-        {user && <LiveTranslator userId={user.id} />}
+        {/* --- PRIVATE TRANSLATOR --- */}
+        {/* hidden prop tells it to hide the CONTROLS when in cinema mode */}
+        {user && <LiveTranslator userId={user.id} hidden={isCinemaMode} />}
 
         {/* --- MAIN PAGE LAYOUT --- */}
-        {/* Only apply layout styling if NOT in cinema mode to avoid background leaks */}
         <div className={`min-h-screen flex flex-col h-screen overflow-hidden ${isCinemaMode ? 'bg-black' : 'p-2 md:p-6'}`}>
             
-            {/* HIDE NAV & HEADER IN CINEMA MODE */}
             {!isCinemaMode && (
                 <div className="max-w-[1600px] mx-auto w-full">
                     {/* NAV */}
@@ -149,7 +148,7 @@ export default function TVPage() {
                         <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
                     </div>
 
-                    {/* HEADER + LAYOUT CONTROLS */}
+                    {/* HEADER */}
                     <div className="flex flex-col md:flex-row justify-between items-center mb-2 h-[50px] shrink-0">
                         <div className="text-center md:text-left mb-2 md:mb-0">
                             <p className="text-pink-400 font-bold text-[10px] uppercase tracking-widest">{t.current_date}</p>
@@ -166,11 +165,9 @@ export default function TVPage() {
             )}
 
             {/* --- MAIN CONTENT AREA --- */}
-            {/* If Cinema Mode: Use fixed positioning to fill screen. Else: Use normal flex layout. */}
             <div className={isCinemaMode ? "fixed inset-0 w-screen h-screen z-[500] bg-black" : "flex-1 flex gap-4 w-full max-w-[1600px] mx-auto min-h-0 pb-4"}>
                 
-                {/* 1. LEFT SIDEBAR (Only in Focus mode + Normal View + >1 stream) */}
-                {/* HIDDEN IN CINEMA MODE */}
+                {/* 1. LEFT SIDEBAR */}
                 {!isCinemaMode && layout === 'focus' && streams.length > 1 && (
                    <div className="hidden md:flex w-48 flex-col gap-3 overflow-y-auto shrink-0 pr-1 no-scrollbar">
                        {streams.slice(1).map((s, i) => (
@@ -187,7 +184,7 @@ export default function TVPage() {
                    </div>
                 )}
 
-                {/* 2. CENTER: VIDEO STAGE (The only thing visible in Cinema Mode) */}
+                {/* 2. CENTER: VIDEO STAGE */}
                 <div className={`flex-1 flex flex-col min-w-0 ${isCinemaMode ? 'w-full h-full' : ''}`}>
                     {streams.length === 0 ? (
                         <div className="glass w-full h-full flex items-center justify-center rounded-2xl border border-white/10">
@@ -199,18 +196,20 @@ export default function TVPage() {
                             {/* FOCUS MODE */}
                             {layout === 'focus' && (
                                 <div className={`
-                                    bg-black overflow-hidden shadow-2xl relative transition-all duration-300 group
-                                    ${isCinemaMode ? 'w-full h-full' : 'aspect-video w-full max-h-full rounded-xl border border-white/10'}
+                                    bg-black rounded-xl overflow-hidden border border-white/10 shadow-2xl relative transition-all duration-300 group
+                                    ${isCinemaMode ? 'w-full h-full rounded-none border-none' : 'aspect-video w-full max-h-full'}
                                 `}>
                                     <iframe src={getEmbedUrl(streams[0])} className="absolute inset-0 w-full h-full" allowFullScreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
                                     
-                                    {/* CINEMA BUTTON - Always visible on hover */}
-                                    <button 
-                                        onClick={toggleCinemaMode}
-                                        className="absolute bottom-4 right-4 z-[100] bg-black/80 hover:bg-pink-600 text-white px-3 py-1.5 rounded-lg border border-white/20 backdrop-blur-md transition shadow-lg font-bold text-xs flex items-center gap-2 opacity-0 group-hover:opacity-100"
-                                    >
-                                        {isCinemaMode ? '↙ Exit Fullscreen' : '⛶ Cinema Mode'}
-                                    </button>
+                                    {/* CINEMA TOGGLE BUTTON - ONLY VISIBLE WHEN NOT IN CINEMA MODE */}
+                                    {!isCinemaMode && (
+                                        <button 
+                                            onClick={toggleCinemaMode}
+                                            className="absolute bottom-4 right-4 z-[100] bg-black/80 hover:bg-pink-600 text-white px-3 py-1.5 rounded-lg border border-white/20 backdrop-blur-md transition shadow-lg font-bold text-xs flex items-center gap-2 opacity-0 group-hover:opacity-100"
+                                        >
+                                            ⛶ Cinema Mode
+                                        </button>
+                                    )}
 
                                     {!isCinemaMode && user?.id === ADMIN_ID && (
                                         <button onClick={() => handleDeleteStream(streams[0])} className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded hover:bg-red-500 z-50 shadow-lg">🗑️</button>
@@ -230,15 +229,9 @@ export default function TVPage() {
                                             {!isCinemaMode && user?.id === ADMIN_ID && <button onClick={() => handleDeleteStream(s)} className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded hover:bg-red-500 z-50 shadow-lg">🗑️</button>}
                                         </div>
                                     ))}
-                                    {/* Note: Cinema Mode on Split View doesn't have a dedicated exit button inside the grid, user uses ESC */}
-                                    {isCinemaMode && (
-                                        <button 
-                                            onClick={toggleCinemaMode}
-                                            className="fixed bottom-4 right-4 z-[100] bg-black/80 hover:bg-pink-600 text-white px-3 py-1.5 rounded-lg border border-white/20 backdrop-blur-md transition shadow-lg font-bold text-xs"
-                                        >
-                                            ↙ Exit
-                                        </button>
-                                    )}
+                                    
+                                    {/* Exit Cinema Mode for Split View - Simple Bottom Right Button */}
+                                    {/* Note: User requested NO buttons in cinema mode, so relying on ESC key entirely */}
                                 </div>
                             )}
                         </div>
