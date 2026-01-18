@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/app/utils/supabase/client'
+// FIX: Added 'useRef' to the imports here
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
@@ -529,6 +530,11 @@ export default function Home() {
             <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
             <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
             <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+            {/* NEW EPICVISION TAB */}
+            <Link href="/epicvision" className="px-4 py-2 font-extrabold text-lg md:text-xl transition hover:scale-105 animate-epic-gradient">
+              EPICVISION
+            </Link>
+
             <div className="absolute right-0 top-0 flex items-center gap-2">
                 <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition" title="How to Play">?</button>
                 <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>

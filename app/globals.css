@@ -41,21 +41,40 @@ body {
   border-radius: 4px;
 }
 
-/* NEW: Flying Animation (Crosses Full Screen) */
+/* Flying Animation */
 @keyframes flyAcross {
   0% { 
-    left: 100%; /* Start just outside right edge */
+    left: 100%; 
     transform: translateX(0);
   }
   100% { 
     left: 0; 
-    transform: translateX(-100vw); /* Move left by full screen width */
+    transform: translateX(-100vw); 
   }
 }
 
 .animate-fly {
   position: absolute;
   white-space: nowrap;
-  animation: flyAcross 15s linear forwards; /* 15s to cross screen */
+  animation: flyAcross 15s linear forwards; 
   will-change: transform, left;
+}
+
+/* --- NEW: EPICVISION ANIMATION (Red/White/Blue) --- */
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.animate-epic-gradient {
+  background: linear-gradient(to right, #ff0000 20%, #ffffff 50%, #0044ff 80%, #ff0000 100%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 3s linear infinite;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
