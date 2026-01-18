@@ -7,7 +7,6 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import { useLanguage } from '@/app/context/LanguageContext'
-// NEW IMPORT
 import { Reorder } from "framer-motion"
 
 //⚠️ IDS
@@ -180,6 +179,7 @@ export default function EpicvisionPage() {
     }
     init()
 
+    // Real-time Status Listeners
     const channel = supabase.channel('realtime_status')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content' }, (payload) => {
         if ((payload.new as any).key === 'epicvision_voting_status') {
@@ -199,6 +199,7 @@ export default function EpicvisionPage() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // --- FETCH FEEDS ---
   useEffect(() => {
       if (activeTab === 'predict' && (predictView === 'feed' || predictView === 'leaderboard')) {
           async function fetchFeed() {
@@ -214,6 +215,7 @@ export default function EpicvisionPage() {
       }
   }, [activeTab, predictView, isHost])
 
+  // --- ADMIN ACTIONS ---
   const handleToggleStatus = async () => {
       const newStatus = isVotingOpen ? 'closed' : 'open'
       setIsVotingOpen(!isVotingOpen)
@@ -228,25 +230,27 @@ export default function EpicvisionPage() {
       toast(newState ? "Predictions Locked 🔒" : "Predictions Unlocked 🔓", { icon: newState ? '🔴' : '🟢' })
   }
 
-  // --- DRAG AND DROP HANDLER ---
+  // --- DRAG AND DROP HANDLERS ---
+  
+  // Handler for My Prediction Reorder (Framer Motion)
   const onReorderPrediction = (newOrder: any[]) => {
-      if (!isHost && isPredLocked) {
-          toast.error(t.ev_pred_locked_msg || "Predictions are locked!")
-          return // This might just revert the UI if user forced drag, but visual feedback helps
-      }
+      if (isPredLocked) return // Visual Revert handled by state not updating
       setPredictionList(newOrder)
       setHasPredicted(false)
   }
   
+  // Handler for Admin Results Reorder (Framer Motion)
   const onReorderResults = (newOrder: any[]) => {
       setOfficialResults(newOrder)
   }
 
+  // Handler for Arrow Buttons
   const moveSong = (list: any[], setList: any, index: number, direction: -1 | 1, isOfficial = false) => {
       if (!isOfficial && isPredLocked && !isHost) {
           toast.error(t.ev_pred_locked_msg || "Predictions are locked!")
           return
       }
+
       const newList = [...list]
       const target = index + direction
       if (target < 0 || target >= newList.length) return
@@ -259,13 +263,21 @@ export default function EpicvisionPage() {
 
   const handleSubmitPrediction = async () => {
       if (!user) return
-      if (isPredLocked && !isHost) { toast.error(t.ev_pred_locked_msg || "Locked!"); return }
+      
+      // STRICT LOCK: Block submit if locked
+      if (isPredLocked) {
+          toast.error(t.ev_pred_locked_msg || "Predictions are locked!")
+          return
+      }
 
       setSubmitting(true)
       const rankingOrder = predictionList.map(s => s.id)
       
       const { error } = await supabase.from('epicvision_predictions').upsert({
-          user_id: user.id, username: user.user_metadata.full_name, avatar_url: user.user_metadata.avatar_url, ranking_order: rankingOrder
+          user_id: user.id,
+          username: user.user_metadata.full_name,
+          avatar_url: user.user_metadata.avatar_url,
+          ranking_order: rankingOrder
       }, { onConflict: 'user_id' })
 
       if (error) toast.error("Failed: " + error.message)
@@ -273,6 +285,7 @@ export default function EpicvisionPage() {
       setSubmitting(false)
   }
 
+  // --- SAVE OFFICIAL RESULTS (ADMIN) ---
   const handleSaveResults = async () => {
       const ids = officialResults.map(s => s.id)
       await supabase.from('site_content').upsert({ key: 'epicvision_results', content: JSON.stringify(ids) })
@@ -299,9 +312,14 @@ export default function EpicvisionPage() {
       }
   }
 
+  // --- LEADERBOARD CALCULATION ---
   const predictionLeaderboard = useMemo(() => {
       if (!communityPredictions || communityPredictions.length === 0) return []
-      if (!hasOfficialResults) return communityPredictions.map(p => ({ ...p, score: null }))
+      
+      // IF NO RESULTS SET, return list without scores (sorted by date)
+      if (!hasOfficialResults) {
+          return communityPredictions.map(p => ({ ...p, score: null }))
+      }
       
       const officialIds = officialResults.map(s => s.id)
 
@@ -321,11 +339,20 @@ export default function EpicvisionPage() {
       }).sort((a, b) => (b.score || 0) - (a.score || 0))
   }, [communityPredictions, officialResults, hasOfficialResults])
 
+
+  // --- VOTING SUBMISSION ---
   const handleToggleVote = (songId: number) => {
       if (!user) { toast.error(t.ev_login_error); return }
       if (!isVotingOpen && !isHost) { toast.error(t.ev_voting_locked_msg); return }
-      if (selectedSongs.includes(songId)) { setSelectedSongs(prev => prev.filter(id => id !== songId)); setHasSubmitted(false) } 
-      else { if (selectedSongs.length >= 5) { toast.error("Max 5 songs!"); return }; setSelectedSongs(prev => [...prev, songId]); setHasSubmitted(false) }
+      
+      if (selectedSongs.includes(songId)) {
+          setSelectedSongs(prev => prev.filter(id => id !== songId))
+          setHasSubmitted(false)
+      } else {
+          if (selectedSongs.length >= 5) { toast.error("Max 5 songs!"); return }
+          setSelectedSongs(prev => [...prev, songId])
+          setHasSubmitted(false)
+      }
   }
 
   const handleSubmitVotes = async () => {
@@ -379,6 +406,7 @@ export default function EpicvisionPage() {
             </div>
         )}
 
+        {/* --- TAB: PREDICTIONS --- */}
         {activeTab === 'predict' && (
             <div className="w-full max-w-4xl pb-32">
                 <div className="flex flex-col items-center gap-2 mb-6">
@@ -393,28 +421,18 @@ export default function EpicvisionPage() {
                 {predictView === 'mine' && (
                     <div className="flex flex-col gap-2">
                         <p className="text-center text-gray-400 mb-4">{t.ev_pred_subtitle}</p>
-                        {/* DRAGGABLE LIST */}
-                        <Reorder.Group axis="y" values={predictionList} onReorder={(newOrder) => onReorderPrediction(newOrder)} className="space-y-2">
+                        
+                        {/* REORDER GROUP - NOW STRICTLY LOCKED IF LOCKED */}
+                        <Reorder.Group axis="y" values={predictionList} onReorder={onReorderPrediction} className="space-y-2">
                             {predictionList.map((song, index) => (
-                                <Reorder.Item key={song.id} value={song} dragListener={!isPredLocked || isHost}>
-                                    <div className={`flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 transition select-none ${isPredLocked && !isHost ? 'opacity-70' : 'cursor-grab active:cursor-grabbing hover:border-purple-500/30'}`}>
-                                        <div className={`font-mono font-bold text-xl w-8 text-center ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-400' : 'text-gray-600'}`}>
-                                            {index + 1}
-                                        </div>
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <img src={`https://flagcdn.com/w40/${song.code}.png`} className="w-8 h-6 rounded shadow-sm pointer-events-none" />
-                                            <div>
-                                                <div className="font-bold text-white text-sm">{getCountryName(song)}</div>
-                                                <div className="text-xs text-gray-400">{song.artist}</div>
-                                            </div>
-                                        </div>
-                                        {/* Drag Handle Icon */}
-                                        {(!isPredLocked || isHost) && (
-                                            <div className="text-gray-600 px-2">☰</div>
-                                        )}
-                                        {/* Fallback Buttons for Accessibility */}
-                                        {(!isPredLocked || isHost) && (
-                                            <div className="flex flex-col gap-1 ml-2 border-l border-white/10 pl-2">
+                                <Reorder.Item key={song.id} value={song} dragListener={!isPredLocked}>
+                                    <div className={`flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 transition select-none ${isPredLocked ? 'opacity-70' : 'cursor-grab active:cursor-grabbing hover:border-purple-500/30'}`}>
+                                        <div className={`font-mono font-bold text-xl w-8 text-center ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-400' : 'text-gray-600'}`}>{index + 1}</div>
+                                        <div className="flex items-center gap-3 flex-1"><img src={`https://flagcdn.com/w40/${song.code}.png`} className="w-8 h-6 rounded shadow-sm pointer-events-none" /><div><div className="font-bold text-white text-sm">{getCountryName(song)}</div><div className="text-xs text-gray-400">{song.artist}</div></div></div>
+                                        
+                                        {/* STRICT LOCK CHECK: Arrows hidden if locked */}
+                                        {(!isPredLocked) && (
+                                            <div className="flex flex-col gap-1 border-l border-white/10 pl-2">
                                                 <button onPointerDown={(e) => { e.stopPropagation(); moveSong(predictionList, setPredictionList, index, -1) }} className="text-green-400 hover:bg-white/10 p-1 rounded text-xs">▲</button>
                                                 <button onPointerDown={(e) => { e.stopPropagation(); moveSong(predictionList, setPredictionList, index, 1) }} className="text-red-400 hover:bg-white/10 p-1 rounded text-xs">▼</button>
                                             </div>
@@ -423,10 +441,14 @@ export default function EpicvisionPage() {
                                 </Reorder.Item>
                             ))}
                         </Reorder.Group>
-                        
+
                         <div className="fixed bottom-0 w-full p-4 bg-black/90 backdrop-blur-md border-t border-white/20 text-center z-50 flex justify-center shadow-[0_-10px_40px_rgba(0,0,0,0.8)]" style={{ left: 0 }}>
                             {(!isPredLocked) ? (
-                                <button onClick={handleSubmitPrediction} disabled={submitting} className={`px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg w-full max-w-md ${hasPredicted ? 'bg-gray-700 text-gray-300 border border-gray-500' : 'bg-purple-600 hover:bg-purple-500 text-white hover:scale-105 active:scale-95'}`}>
+                                <button 
+                                    onClick={handleSubmitPrediction} 
+                                    disabled={submitting} 
+                                    className={`px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg w-full max-w-md ${hasPredicted ? 'bg-gray-700 text-gray-300 border border-gray-500' : 'bg-purple-600 hover:bg-purple-500 text-white hover:scale-105 active:scale-95'}`}
+                                >
                                     <span>{submitting ? 'Saving...' : hasPredicted ? t.ev_pred_update : t.ev_pred_save}</span>
                                 </button>
                             ) : (
@@ -436,54 +458,61 @@ export default function EpicvisionPage() {
                     </div>
                 )}
 
-                {/* SET RESULTS (DRAGGABLE FOR ADMIN) */}
-                {predictView === 'set_results' && isHost && (
-                    <div className="flex flex-col gap-2">
-                         <div className="flex justify-between items-center mb-4 bg-blue-900/20 p-4 rounded-xl border border-blue-500/50">
-                            <div><h2 className="text-xl font-bold text-blue-400">Set Official Results</h2><button onClick={handleResetResults} className="text-xs text-red-400 hover:text-red-300 underline">Reset Results</button></div>
-                            <div className="flex gap-2"><button onClick={handleResetAllPredictions} className="bg-red-900/50 hover:bg-red-700 text-white px-3 py-2 rounded font-bold border border-red-500 text-xs">Reset Predictions</button><button onClick={handleSaveResults} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-bold shadow-lg"><span>{t.ev_save_results}</span></button></div>
-                         </div>
-                         
-                         <Reorder.Group axis="y" values={officialResults} onReorder={onReorderResults} className="space-y-2">
-                             {officialResults.map((song, index) => (
-                                <Reorder.Item key={song.id} value={song} className="cursor-grab active:cursor-grabbing">
-                                    <div className="flex items-center gap-4 bg-blue-900/10 p-3 rounded-xl border border-blue-500/30 select-none">
-                                        <div className="font-mono font-bold text-xl w-8 text-center text-blue-400">{index + 1}</div>
-                                        <div className="flex items-center gap-3 flex-1"><img src={`https://flagcdn.com/w40/${song.code}.png`} className="w-8 h-6 rounded shadow-sm pointer-events-none" /><div><div className="font-bold text-white text-sm">{getCountryName(song)}</div><div className="text-xs text-gray-400">{song.artist}</div></div></div>
-                                        <div className="text-gray-500 px-2">☰</div>
-                                    </div>
-                                </Reorder.Item>
-                             ))}
-                         </Reorder.Group>
-                    </div>
-                )}
-
-                {/* OTHER VIEWS UNCHANGED */}
+                {/* COMMUNITY FEED */}
                 {predictView === 'feed' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {communityPredictions.length === 0 && <p className="text-center text-gray-500 col-span-full"><span>{t.ev_no_preds}</span></p>}
                         {communityPredictions.map((pred) => {
-                            const winnerId = pred.ranking_order[0]; const winner = SONGS.find(s => s.id === winnerId)
-                            return (<div key={pred.user_id} className="glass p-4 rounded-xl border border-white/10 flex items-center justify-between"><div className="flex items-center gap-3">{pred.avatar_url ? <img src={pred.avatar_url} className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}<div><div className="font-bold text-white">{pred.username}</div><div className="text-xs text-gray-400 flex items-center gap-1"><span>{t.ev_pred_winner}: <span className="text-yellow-400 font-bold">{getCountryName(winner)}</span></span>{winner && <img src={`https://flagcdn.com/w40/${winner.code}.png`} className="w-4 h-3 rounded" />}</div></div></div><button onClick={() => setViewPrediction(pred)} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-2 rounded text-purple-300 font-bold transition"><span>{t.ev_view_full}</span></button></div>)
+                            const winnerId = pred.ranking_order[0]
+                            const winner = SONGS.find(s => s.id === winnerId)
+                            return (
+                                <div key={pred.user_id} className="glass p-4 rounded-xl border border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {pred.avatar_url ? <img src={pred.avatar_url} className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}
+                                        <div>
+                                            <div className="font-bold text-white">{pred.username}</div>
+                                            <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                <span>{t.ev_pred_winner}: <span className="text-yellow-400 font-bold">{getCountryName(winner)}</span></span>
+                                                {winner && <img src={`https://flagcdn.com/w40/${winner.code}.png`} className="w-4 h-3 rounded" />}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setViewPrediction(pred)} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-2 rounded text-purple-300 font-bold transition"><span>{t.ev_view_full}</span></button>
+                                </div>
+                            )
                         })}
                     </div>
                 )}
-
+                
+                {predictView === 'set_results' && isHost && (
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center mb-4 bg-blue-900/20 p-4 rounded-xl border border-blue-500/50"><div><h2 className="text-xl font-bold text-blue-400">Set Official Results</h2><button onClick={handleResetResults} className="text-xs text-red-400 hover:text-red-300 underline">Reset Results</button></div><div className="flex gap-2"><button onClick={handleResetAllPredictions} className="bg-red-900/50 hover:bg-red-700 text-white px-3 py-2 rounded font-bold border border-red-500 text-xs">Reset Predictions</button><button onClick={handleSaveResults} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-bold shadow-lg"><span>{t.ev_save_results}</span></button></div></div>
+                        <Reorder.Group axis="y" values={officialResults} onReorder={onReorderResults} className="space-y-2">
+                            {officialResults.map((song, index) => (
+                            <Reorder.Item key={song.id} value={song} className="cursor-grab active:cursor-grabbing">
+                                <div className="flex items-center gap-4 bg-blue-900/10 p-3 rounded-xl border border-blue-500/30 select-none"><div className="font-mono font-bold text-xl w-8 text-center text-blue-400">{index + 1}</div><div className="flex items-center gap-3 flex-1"><img src={`https://flagcdn.com/w40/${song.code}.png`} className="w-8 h-6 rounded shadow-sm pointer-events-none" /><div><div className="font-bold text-white text-sm">{getCountryName(song)}</div><div className="text-xs text-gray-400">{song.artist}</div></div></div><div className="text-gray-500 px-2">☰</div></div>
+                            </Reorder.Item>
+                            ))}
+                        </Reorder.Group>
+                    </div>
+                )}
+                
                 {predictView === 'leaderboard' && (
                     <div className="space-y-3">
                          <h2 className="text-2xl font-bold text-yellow-400 text-center mb-4"><span>{t.ev_pred_tab_leaderboard}</span></h2>
                          {predictionLeaderboard.map((p, i) => {
                              let rankStyle = "bg-white/5 border-white/10"; let rankIcon = <span className="text-gray-500 font-mono">#{i+1}</span>
-                             if (i===0) { rankStyle = "bg-yellow-900/20 border-yellow-500"; rankIcon = "🥇" } else if (i===1) { rankStyle = "bg-slate-800/50 border-slate-400"; rankIcon = "🥈" } else if (i===2) { rankStyle = "bg-orange-900/20 border-orange-600"; rankIcon = "🥉" }
+                             if (i===0) { rankStyle = "bg-yellow-900/20 border-yellow-500"; rankIcon = <span>🥇</span> } else if (i===1) { rankStyle = "bg-slate-800/50 border-slate-400"; rankIcon = <span>🥈</span> } else if (i===2) { rankStyle = "bg-orange-900/20 border-orange-600"; rankIcon = <span>🥉</span> }
                              return (<div key={p.user_id} onClick={() => setViewPrediction(p)} className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer hover:bg-white/10 transition ${rankStyle}`}><div className="flex items-center gap-4"><div className="text-xl font-bold w-8 text-center">{rankIcon}</div>{p.avatar_url ? <img src={p.avatar_url} className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">👤</div>}<div><div className="font-bold text-white">{p.username}</div><div className="text-xs text-gray-400">Date: {new Date(p.created_at).toLocaleDateString()}</div></div></div><div className="text-right"><span className="block text-2xl font-bold text-white">{p.score !== null ? p.score : '-'}</span><span className="text-[10px] uppercase text-gray-500 font-bold"><span>{t.ev_points}</span></span></div></div>)
                          })}
                          {predictionLeaderboard.length === 0 && <p className="text-center text-gray-500">Waiting for predictions...</p>}
                     </div>
                 )}
+
             </div>
         )}
 
-        {/* ... (Vote Tab & Results Tab Code remains same as previous step, omitted for brevity but include it in file) ... */}
+        {/* ... (Results & Vote Tabs logic is same as before) ... */}
         {activeTab === 'results' && isHost && (
             <div className="w-full max-w-3xl flex flex-col gap-4">
                 <div className="text-center mb-4 relative"><h2 className="text-2xl font-bold text-yellow-400"><span>{t.ev_results_title}</span></h2><p className="text-gray-400"><span>{t.ev_total_votes}</span>: <span className="text-white font-mono">{allVotes.length}</span></p><button onClick={handleResetVotes} className="absolute top-0 right-0 bg-red-900/50 hover:bg-red-600 text-red-200 text-xs px-3 py-1 rounded border border-red-700 transition">🗑️ Reset All</button></div>
