@@ -124,9 +124,43 @@ export const translations = {
     open_external: "Watch on Official Site ↗",
     current_date: "Today is",
 
+    // EPICVISION PAGE
+    ev_subtitle: "Official Community Event",
+    ev_home: "🏠 Home",
+    ev_watch: "📺 Watch Live",
+    ev_tab_vote: "🗳️ Vote",
+    ev_tab_predict: "🔮 Predictions",
+    ev_tab_results: "🏆 Results",
+    
+    ev_voted: "VOTED",
+    ev_selected: "SELECTED",
+    
+    ev_predict_title: "Predictions Coming Soon",
+    ev_predict_desc: "Soon you will be able to predict the full ranking of the Epicvision Grand Final!",
+    
+    ev_footer_winner: "Your Winner",
+    ev_footer_none: "None Selected",
+    
+    ev_login_error: "Please login to vote",
+    ev_vote_success: "Voted for",
+    
+    ev_votes_left: "Votes Left",
+    ev_submit: "Submit Votes",
+    ev_update: "Update Votes",
+    
+    ev_results_title: "Live Results",
+    ev_total_votes: "Total Votes Cast",
+
+    // NEW: LOCKING SYSTEM
+    ev_voting_closed: "⛔ VOTING CLOSED",
+    ev_status_open: "🔓 Open Voting",
+    ev_status_close: "🔒 Close Voting",
+    ev_voting_locked_msg: "Voting is currently locked by the host.",
+
     close_modal: "Close"
   },
   ru: {
+    // Navigation
     nav_betting: "🏠 Ставки",
     nav_stream: "1epicstory",
     nav_calendar: "📅 Календарь",
@@ -134,10 +168,12 @@ export const translations = {
     nav_leaderboard: "🏆 Таблица",
     nav_tv: "📺 Прямой Эфир",
     
+    // Auth & User
     login: "Войти через Twitch",
     logout: "Выйти",
     user: "Пользователь",
     
+    // Home / Betting
     tokens_left: "Жетонов",
     odds: "КОЭФ.",
     avg: "Ср.",
@@ -152,6 +188,7 @@ export const translations = {
     sort_odds: "Сорт: Коэф.",
     sort_alpha: "Сорт: А-Я",
 
+    // Detailed Rating System
     rate_button: "Оценить",
     criteria_song: "Качество песни",
     criteria_live: "Выступление",
@@ -162,17 +199,20 @@ export const translations = {
     your_avg: "Ваш ср.",
     save_rating: "Сохранить",
 
+    // Stream Page
     main_stage: "Сейчас на главном экране",
     open_chat: "Чат ↗",
     more_streamers: "Другие стримеры",
     watch: "Смотреть",
     swap: "Наверх ⬆",
 
+    // Calendar Page
     prev: "← Пред.",
     next: "След. →",
     delete_event_confirm: "Удалить событие",
     click_open: "Открыть ↗",
 
+    // Predictions Page
     select_final: "Выберите Нацотбор",
     no_finals: "Нет активных отборов.",
     change_final: "← Назад",
@@ -184,10 +224,12 @@ export const translations = {
     locked: "ЗАКРЫТО",
     view_stats: "Статистика",
 
+    // Event Status
     status_open: "ОТКРЫТО",
     status_locked: "СКОРО ОТКРЫТИЕ",
     status_closed: "СОБЫТИЕ ЗАВЕРШЕНО",
 
+    // Prediction Stats
     back_list: "← Назад",
     back_finals: "← К списку",
     leaderboard_title: "Таблица прогнозов",
@@ -201,6 +243,7 @@ export const translations = {
     wrong: "Мимо",
     actual: "Факт:",
 
+    // Leaderboard Page
     championship: "Чемпионат Сезона",
     total_points: "Сумма очков за все отборы",
     rank: "Место",
@@ -210,6 +253,7 @@ export const translations = {
     no_scores: "Пока нет очков! Ждем результатов.",
     prize_message: "🏆 Игрок, набравший больше всех очков в конце сезона, получит 100€!",
 
+    // User Profile
     profile_title: "Профиль",
     badges: "Значки",
     stats: "Статистика",
@@ -221,6 +265,7 @@ export const translations = {
     badge_oracle: "Оракул",
     badge_newbie: "Новичок",
 
+    // Help Modal
     help_title: "Как играть",
     help_betting_title: "💰 Рынок Ставок",
     help_betting_desc: "У вас 5 жетонов. Ставьте их на страны, которые, по вашему мнению, выиграют. Чем больше ставок на страну, тем ниже коэффициенты. Вы можете снять ставку, чтобы вернуть жетон.",
@@ -231,12 +276,46 @@ export const translations = {
     help_leaderboard_title: "🏆 Таблица Лидеров",
     help_leaderboard_desc: "Соревнуйтесь с сообществом! Очки за все прогнозы суммируются здесь, чтобы определить главного эксперта Евровидения.",
 
+    // Live TV
     chat_title: "Чат",
     chat_placeholder: "Напишите сообщение...",
     chat_send: "Отпр.",
     stream_blocked: "Не грузит?",
     open_external: "Открыть сайт трансляции ↗",
     current_date: "Сегодня",
+
+    // EPICVISION PAGE
+    ev_subtitle: "Официальное Событие Сообщества",
+    ev_home: "🏠 Главная",
+    ev_watch: "📺 Смотреть",
+    ev_tab_vote: "🗳️ Голосование",
+    ev_tab_predict: "🔮 Прогнозы",
+    ev_tab_results: "🏆 Результаты",
+    
+    ev_voted: "ВЫБРАНО",
+    ev_selected: "ВЫБРАНО",
+    
+    ev_predict_title: "Прогнозы Скоро",
+    ev_predict_desc: "Скоро вы сможете предсказать полный рейтинг Гранд-финала Epicvision!",
+    
+    ev_footer_winner: "Ваш Победитель",
+    ev_footer_none: "Не выбрано",
+    
+    ev_login_error: "Войдите, чтобы голосовать",
+    ev_vote_success: "Голос за",
+    
+    ev_votes_left: "Осталось голосов",
+    ev_submit: "Отправить",
+    ev_update: "Обновить",
+    
+    ev_results_title: "Результаты",
+    ev_total_votes: "Всего голосов",
+
+    // NEW: LOCKING SYSTEM
+    ev_voting_closed: "⛔ ГОЛОСОВАНИЕ ЗАКРЫТО",
+    ev_status_open: "🔓 Открыть",
+    ev_status_close: "🔒 Закрыть",
+    ev_voting_locked_msg: "Голосование временно закрыто ведущим.",
 
     close_modal: "Закрыть"
   }

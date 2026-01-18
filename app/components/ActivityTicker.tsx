@@ -2,22 +2,25 @@
 
 import { createClient } from '@/app/utils/supabase/client'
 import { useEffect, useState, useRef } from 'react'
+import { usePathname } from 'next/navigation' 
 
 type TickerItem = {
   id: number
   text: string
 }
 
-// REMOVED PROP: No longer takes { countries }
 export default function ActivityTicker() {
+  const pathname = usePathname()
   const supabase = createClient()
   
   const [items, setItems] = useState<TickerItem[]>([])
-  const [countries, setCountries] = useState<any[]>([]) // Internal state for countries
+  const [countries, setCountries] = useState<any[]>([]) 
   
   const queueRef = useRef<string[]>([])
   const isProcessingRef = useRef(false)
   const hasInited = useRef(false)
+
+  // --- HOOKS MUST RUN EVERY TIME (Do not put 'if' returns above them) ---
 
   // 1. FETCH COUNTRIES ON MOUNT
   useEffect(() => {
@@ -65,7 +68,7 @@ export default function ActivityTicker() {
     }
   }
 
-  // 3. LISTENERS (Only start after countries are loaded)
+  // 3. LISTENERS
   useEffect(() => {
     if (countries.length === 0) return
 
@@ -122,6 +125,11 @@ export default function ActivityTicker() {
     const interval = setInterval(checkEvents, 60000)
     return () => clearInterval(interval)
   }, [])
+
+  // --- 5. CONDITIONAL RENDER (Must be AFTER all hooks) ---
+  if (pathname?.startsWith('/epicvision')) {
+      return null
+  }
 
   return (
     <div className="fixed bottom-0 left-0 w-full h-8 bg-black/90 backdrop-blur-md border-t border-white/20 z-[100] flex items-center overflow-hidden pointer-events-none shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
