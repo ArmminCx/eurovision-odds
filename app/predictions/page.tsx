@@ -1,11 +1,11 @@
 'use client'
 
 import { createClient } from '@/app/utils/supabase/client'
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
+import { useEffect, useState, useMemo } from 'react'
 import { User } from '@supabase/supabase-js'
 import { useLanguage } from '@/app/context/LanguageContext'
+import Link from 'next/link'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts'
@@ -35,7 +35,10 @@ export default function PredictionsPage() {
   const [selectedFinal, setSelectedFinal] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [gradingMode, setGradingMode] = useState(false) 
+  const [gradingMode, setGradingMode] = useState(false)
+  
+  // NEW: Filter State
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     async function init() {
@@ -47,9 +50,28 @@ export default function PredictionsPage() {
   }, [])
 
   async function fetchFinals() {
-    const { data } = await supabase.from('national_finals').select('*').order('created_at', { ascending: false })
+    // Sort by Date (Soonest first)
+    const { data } = await supabase.from('national_finals').select('*').order('event_date', { ascending: true })
     if (data) setFinals(data)
   }
+
+  // --- FILTER LOGIC ---
+  const filteredFinals = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) 
+
+    return finals.filter(f => {
+        if (!f.event_date) return !showHistory
+        
+        const eventDate = new Date(f.event_date)
+        
+        if (showHistory) {
+            return eventDate < today || f.status === 'closed'
+        } else {
+            return eventDate >= today || f.status === 'open' || f.status === 'locked'
+        }
+    })
+  }, [finals, showHistory])
 
   // --- NAVIGATION ---
   const openGame = (final: any) => { setSelectedFinal(final); loadGameData(final.id); setGradingMode(false); setView('GAME') }
@@ -102,10 +124,7 @@ export default function PredictionsPage() {
     if (data && participantsData) {
       const userMap = new Map()
       const songStatsMap = new Map()
-
-      participantsData.forEach(p => {
-          songStatsMap.set(p.id, { info: p, rankSum: 0, count: 0 })
-      })
+      participantsData.forEach(p => { songStatsMap.set(p.id, { info: p, rankSum: 0, count: 0 }) })
 
       data.forEach(row => {
         if (!userMap.has(row.user_id)) userMap.set(row.user_id, { 
@@ -237,24 +256,46 @@ export default function PredictionsPage() {
       <div className="max-w-7xl mx-auto">
         
         {/* NAV */}
-        <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 md:gap-6 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
-          <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
-          <Link href="/tv" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_tv}</Link>
-          <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
-          <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
-          <Link href="/leaderboard" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
+        <div className="relative flex justify-center gap-4 md:gap-6 mb-4 md:mb-8 border-b border-white/20 pb-4 flex-wrap">
+          <Link href="/" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
+          <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
+          <Link href="/tv" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_tv}</Link>
+          <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
+          {/* Active Tab */}
+          <Link href="/predictions" className="px-4 py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
+          <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_leaderboard}</Link>
+          
           <button onClick={toggleLanguage} className="absolute right-0 top-0 hidden md:block glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
         </div>
         <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
 
-        {/* VIEW 1: LIST */}
+        {/* VIEW 1: LIST (With Filter and Dates) */}
         {view === 'LIST' && (
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">{t.select_final}</h1>
-            {finals.length === 0 && <p className="text-center text-gray-500">{t.no_finals}</p>}
+            
+            {/* FILTER TOGGLE */}
+            <div className="flex justify-center mb-6">
+                <div className="bg-black/40 p-1 rounded-lg border border-white/10 flex">
+                    <button 
+                        onClick={() => setShowHistory(false)}
+                        className={`px-4 py-2 rounded-md font-bold text-sm transition ${!showHistory ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        {t.pred_filter_upcoming}
+                    </button>
+                    <button 
+                        onClick={() => setShowHistory(true)}
+                        className={`px-4 py-2 rounded-md font-bold text-sm transition ${showHistory ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                        {t.pred_filter_history}
+                    </button>
+                </div>
+            </div>
+
+            {filteredFinals.length === 0 && <p className="text-center text-gray-500">{t.no_finals}</p>}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {finals.map(final => {
+              {filteredFinals.map(final => {
                 const isAdmin = user?.id === ADMIN_ID; 
                 const status = final.status || 'locked'
                 const canEnter = status === 'open' || isAdmin 
@@ -264,6 +305,9 @@ export default function PredictionsPage() {
                 if (status === 'open') { badgeColor = "bg-green-500 text-black"; badgeText = t.status_open }
                 else if (status === 'closed') { badgeColor = "bg-red-600 text-white"; badgeText = t.status_closed }
 
+                // Date Formatting
+                const eventDate = final.event_date ? new Date(final.event_date).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric' }) : 'TBA'
+
                 return (
                   <div key={final.id} onClick={() => canEnter && openGame(final)} className={`relative glass p-4 md:p-6 rounded-xl transition flex items-center gap-4 group shadow-lg ${canEnter ? 'hover:bg-white/5 cursor-pointer border border-white/10 hover:border-pink-500' : 'opacity-60 cursor-not-allowed border border-white/5'}`}>
                     <img src={`https://flagcdn.com/w80/${final.country_code.toLowerCase()}.png`} className="w-12 h-8 rounded object-cover shadow-sm" />
@@ -272,9 +316,14 @@ export default function PredictionsPage() {
                         <span className="text-lg md:text-xl font-bold group-hover:text-pink-300 block">{final.name}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badgeColor}`}>{badgeText}</span>
                       </div>
-                      <span className="text-xs text-gray-400">{final.event_time}</span>
+                      <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                          <span className="text-purple-300 font-bold">📅 {eventDate}</span>
+                          <span>🕒 {final.event_time}</span>
+                      </div>
                     </div>
+                    
                     <button onClick={(e) => openStats(final, e)} className="w-10 h-10 rounded-full bg-blue-900/50 hover:bg-blue-600 text-blue-200 flex items-center justify-center transition z-20 border border-blue-700/50">📊</button>
+                    
                     {isAdmin && (
                       <div className="flex gap-2 ml-2">
                         <button onClick={(e) => handleCycleStatus(e, final.id, status)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold border bg-gray-700 hover:bg-gray-600">{status === 'open' ? '🔓' : status === 'locked' ? '🟠' : '🔒'}</button>
@@ -288,7 +337,8 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* VIEW 2: GAME */}
+        {/* ... (GAME, STATS, SPECTATE views - unchanged) ... */}
+        {/* Keeping the rest of the code as is for brevity, assume it is correctly appended below */}
         {view === 'GAME' && (
           <div>
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
@@ -322,7 +372,6 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* VIEW 3: STATS (Leaderboard + Graph) */}
         {view === 'STATS' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -330,6 +379,7 @@ export default function PredictionsPage() {
                 <button onClick={() => setView('LIST')} className="text-gray-300 hover:text-white font-bold">{t.back_list}</button>
                 <h1 className="text-xl md:text-2xl font-bold">{t.leaderboard_title}</h1>
               </div>
+              
               {user?.id === ADMIN_ID && predictors.length > 0 && (
                 <button onClick={handleAwardPrizes} className="bg-yellow-600 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center gap-2">🎁 Award Prizes</button>
               )}
@@ -338,7 +388,7 @@ export default function PredictionsPage() {
             {loading ? <p className="text-center text-gray-500">{t.loading}</p> : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                {/* LEFT: COMMUNITY PREDICTION GRAPH (CUSTOM TOOLTIP) */}
+                {/* LEFT: GRAPH (CUSTOM TOOLTIP) */}
                 <div className="glass p-6 rounded-xl border border-white/10 shadow-lg order-2 lg:order-1">
                     <h3 className="text-lg font-bold text-pink-400 mb-4 border-b border-white/10 pb-2">📊 Community Consensus</h3>
                     {communityStats.length > 0 ? (
@@ -348,7 +398,6 @@ export default function PredictionsPage() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
                                     <XAxis type="number" hide />
                                     <YAxis dataKey="name" type="category" width={100} tick={{ fill: '#aaa', fontSize: 10 }} />
-                                    {/* UPDATED: Custom Tooltip with Song & Score */}
                                     <Tooltip
                                         cursor={{fill: 'transparent'}}
                                         content={({ active, payload }) => {
@@ -385,7 +434,7 @@ export default function PredictionsPage() {
                     )}
                 </div>
 
-                {/* RIGHT: USER LEADERBOARD */}
+                {/* RIGHT: LEADERBOARD */}
                 <div className="order-1 lg:order-2">
                     {predictors.length === 0 ? <p className="text-gray-500">{t.no_predictions}</p> : predictors.map((p, idx) => {
                     const rank = p.displayRank || idx + 1

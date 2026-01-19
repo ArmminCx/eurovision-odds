@@ -64,6 +64,10 @@ export const translations = {
     locked: "LOCKED",
     view_stats: "View Statistics",
     
+    // Prediction Filters
+    pred_filter_upcoming: "📅 Upcoming",
+    pred_filter_history: "🗄️ History",
+
     // Event Status
     status_open: "OPEN",
     status_locked: "OPENING SOON",
@@ -239,6 +243,10 @@ export const translations = {
     locked: "ЗАКРЫТО",
     view_stats: "Статистика",
 
+    // Prediction Filters
+    pred_filter_upcoming: "📅 Предстоящие",
+    pred_filter_history: "🗄️ Прошедшие",
+    
     // Event Status
     status_open: "ОТКРЫТО",
     status_locked: "СКОРО ОТКРЫТИЕ",
