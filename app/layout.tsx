@@ -3,7 +3,8 @@ import "./globals.css";
 import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from 'react-hot-toast';
 import BroadcastListener from "./components/BroadcastListener";
-import ActivityTicker from "./components/ActivityTicker"; // IMPORT ADDED
+import ActivityTicker from "./components/ActivityTicker";
+import DailyRewardChecker from "./components/DailyRewardChecker"; // 👈 NEW IMPORT
 
 export const metadata: Metadata = {
   title: "Eurovision Odds",
@@ -42,12 +43,16 @@ export default function RootLayout({
     <html lang="en">
       <body className="text-white">
         <LanguageProvider>
-          {/* GLOBAL LISTENERS & UI */}
-          <BroadcastListener />
-          <ActivityTicker />  {/* NOW GLOBAL */}
           
+          {/* --- GLOBAL LISTENERS (Run on every page) --- */}
+          <BroadcastListener />
+          <ActivityTicker />
+          <DailyRewardChecker /> {/* 👈 CHECKS FOR DAILY LOGIN BONUS */}
+          
+          {/* --- MAIN CONTENT --- */}
           {children}
           
+          {/* --- NOTIFICATIONS --- */}
           <Toaster 
             position="top-center"
             reverseOrder={false}
