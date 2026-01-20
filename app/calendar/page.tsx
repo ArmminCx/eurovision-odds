@@ -6,9 +6,81 @@ import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/app/context/LanguageContext'
+import toast from 'react-hot-toast'
 
 //⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
+
+// --- EDIT MODAL COMPONENT ---
+function EditEventModal({ event, onClose, onSave }: { event: any, onClose: () => void, onSave: (data: any) => void }) {
+  const [formData, setFormData] = useState({
+    title: event.title || '',
+    description: event.description || '',
+    link: event.link || '',
+    is_national_final: event.is_national_final || false
+  })
+
+  const handleSave = () => {
+    onSave({ ...event, ...formData })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="glass w-full max-w-md p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold text-white mb-4">Edit Event</h2>
+        
+        <div className="space-y-3">
+            <div>
+                <label className="text-xs text-gray-400">Event Title</label>
+                <input 
+                    type="text" 
+                    value={formData.title} 
+                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    className="w-full bg-white/10 border border-white/10 rounded p-2 text-white outline-none focus:border-pink-500"
+                />
+            </div>
+            <div>
+                <label className="text-xs text-gray-400">Description / Time</label>
+                <input 
+                    type="text" 
+                    value={formData.description} 
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    className="w-full bg-white/10 border border-white/10 rounded p-2 text-white outline-none focus:border-pink-500"
+                />
+            </div>
+            <div>
+                <label className="text-xs text-gray-400">Link (Optional)</label>
+                <input 
+                    type="text" 
+                    value={formData.link} 
+                    onChange={e => setFormData({...formData, link: e.target.value})}
+                    className="w-full bg-white/10 border border-white/10 rounded p-2 text-white outline-none focus:border-pink-500"
+                />
+            </div>
+            
+            {/* NATIONAL FINAL TOGGLE */}
+            <div className="flex items-center gap-3 pt-2">
+                <input 
+                    type="checkbox" 
+                    id="nf-check"
+                    checked={formData.is_national_final}
+                    onChange={e => setFormData({...formData, is_national_final: e.target.checked})}
+                    className="w-5 h-5 accent-yellow-500 cursor-pointer"
+                />
+                <label htmlFor="nf-check" className="text-sm font-bold text-yellow-400 cursor-pointer">
+                    Is National Final? (Gold Outline)
+                </label>
+            </div>
+        </div>
+
+        <div className="flex gap-2 mt-6">
+            <button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold">Save Changes</button>
+            <button onClick={onClose} className="flex-1 bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg">Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function CalendarPage() {
   const supabase = createClient()
@@ -16,6 +88,9 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<any[]>([])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [user, setUser] = useState<User | null>(null)
+  
+  // Edit State
+  const [editingEvent, setEditingEvent] = useState<any>(null)
 
   async function getEvents() {
     const { data } = await supabase.from('calendar_events').select('*')
@@ -38,6 +113,23 @@ export default function CalendarPage() {
     else getEvents()
   }
 
+  const handleUpdateEvent = async (updatedData: any) => {
+      const { error } = await supabase.from('calendar_events').update({
+          title: updatedData.title,
+          description: updatedData.description,
+          link: updatedData.link,
+          is_national_final: updatedData.is_national_final
+      }).eq('id', updatedData.id)
+
+      if (error) {
+          toast.error("Failed to update")
+      } else {
+          toast.success("Event Updated!")
+          setEditingEvent(null)
+          getEvents()
+      }
+  }
+
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
   const monthName = currentDate.toLocaleString(lang === 'ru' ? 'ru' : 'default', { month: 'long' })
@@ -57,15 +149,22 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen p-2 md:p-8">
+      
+      {/* EDIT MODAL */}
+      {editingEvent && (
+          <EditEventModal 
+            event={editingEvent} 
+            onClose={() => setEditingEvent(null)} 
+            onSave={handleUpdateEvent} 
+          />
+      )}
+
       <div className="max-w-6xl mx-auto">
         
         {/* NAV */}
         <div className="relative flex overflow-x-auto md:flex-wrap md:justify-center gap-4 mb-4 md:mb-8 border-b border-white/20 pb-4 no-scrollbar">
           <Link href="/" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_betting}</Link>
-          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2">
-            <Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />
-            {t.nav_stream}
-          </Link>
+          <Link href="/epicstory" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
           <Link href="/tv" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_tv}</Link>
           <Link href="/calendar" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-purple-400 border-b-2 border-purple-400 font-bold text-sm md:text-xl transition">{t.nav_calendar}</Link>
           <Link href="/predictions" className="flex-shrink-0 px-3 py-1 md:px-4 md:py-2 text-gray-300 hover:text-white font-bold text-sm md:text-xl transition">{t.nav_predict}</Link>
@@ -103,7 +202,6 @@ export default function CalendarPage() {
                 })
 
                 return (
-                  // ADDED: hover:z-50 to the Day Cell itself. This brings the whole day box to the front on hover.
                   <div 
                     key={dayNum} 
                     className={`glass min-h-[100px] md:min-h-[140px] rounded-lg p-2 relative flex flex-col hover:z-50 transition-all ${isToday ? 'border-pink-500 bg-pink-500/10' : 'border-white/10'}`}
@@ -113,15 +211,25 @@ export default function CalendarPage() {
                     {/* Event Container */}
                     <div className="flex flex-wrap gap-2 justify-center content-center flex-1">
                       {daysEvents.map(event => (
-                        <div key={event.id} className="group relative">
+                        <div key={event.id} className="group relative hover:z-[100]">
+                          
+                          {/* ADMIN CONTROLS (Edit & Delete) */}
                           {user?.id === ADMIN_ID && (
-                            <button 
-                              onClick={(e) => { e.preventDefault(); handleDeleteEvent(event.id, event.title); }}
-                              className="absolute -top-2 -right-2 z-30 bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition"
-                            >✕</button>
+                            <div className="absolute -top-3 -right-3 z-30 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                <button 
+                                  onClick={(e) => { e.preventDefault(); setEditingEvent(event); }}
+                                  className="bg-blue-600 hover:bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md"
+                                  title="Edit"
+                                >✎</button>
+                                <button 
+                                  onClick={(e) => { e.preventDefault(); handleDeleteEvent(event.id, event.title); }}
+                                  className="bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md"
+                                  title="Delete"
+                                >✕</button>
+                            </div>
                           )}
                           
-                          {/* SVG HEART - Size: w-8 (mobile) / w-10 (desktop) */}
+                          {/* SVG HEART */}
                           <a 
                             href={event.link || '#'} target="_blank" rel="noopener noreferrer"
                             className={`block w-8 h-8 md:w-10 md:h-10 transition transform hover:scale-110 hover:z-10 ${event.link ? 'cursor-pointer' : 'cursor-default'}`}
@@ -129,7 +237,8 @@ export default function CalendarPage() {
                           >
                             <svg 
                               viewBox="0 0 24 24" 
-                              className="w-full h-full drop-shadow-lg"
+                              // Apply Gold Glow if it's a National Final
+                              className={`w-full h-full ${event.is_national_final ? 'drop-shadow-[0_0_4px_rgba(234,179,8,1)]' : 'drop-shadow-lg'}`}
                               xmlns="http://www.w3.org/2000/svg"
                             >
                               <defs>
@@ -144,13 +253,17 @@ export default function CalendarPage() {
                                 clipPath={`url(#heartClip-${event.id})`}
                                 preserveAspectRatio="xMidYMid slice" 
                               />
-                              <path d={heartPathData} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
+                              {/* Gold Border for National Finals, subtle white for others */}
+                              <path d={heartPathData} fill="none" stroke={event.is_national_final ? "#FBBF24" : "rgba(255,255,255,0.2)"} strokeWidth={event.is_national_final ? "1.5" : "0.5"} />
                             </svg>
                           </a>
 
-                          {/* Hover Tooltip - High Z-Index + Backdrop Blur */}
+                          {/* Hover Tooltip */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 md:w-48 bg-black/95 p-2 md:p-3 rounded-xl border border-purple-500/50 text-[10px] md:text-xs shadow-2xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-[100] backdrop-blur-xl">
-                            <div className="font-bold text-white mb-1 text-center">{event.title}</div>
+                            <div className="font-bold text-white mb-1 text-center flex items-center justify-center gap-1">
+                                {event.title}
+                                {event.is_national_final && <span className="text-yellow-400">🏆</span>}
+                            </div>
                             <div className="text-gray-400 text-center">{event.description}</div>
                             {event.link && <div className="text-blue-400 mt-1 text-center font-bold">{t.click_open}</div>}
                           </div>

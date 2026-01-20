@@ -64,6 +64,60 @@ function GraphModal({ countryId, countryName, allVotes, onClose }: { countryId: 
   )
 }
 
+// --- NEW: SHAREHOLDERS MODAL (BOOKMAKERS) ---
+function ShareholdersModal({ country, allVotes, onClose }: { country: any, allVotes: any[], onClose: () => void }) {
+    
+    // Aggregate votes by user
+    const shareholders = useMemo(() => {
+        const countryVotes = allVotes.filter(v => v.country_id === country.id)
+        const map = new Map<string, { username: string, avatar: string, count: number }>()
+
+        countryVotes.forEach(vote => {
+            const uid = vote.user_id
+            if (!map.has(uid)) {
+                map.set(uid, {
+                    username: vote.username || 'Early Investor', // Fallback for old votes
+                    avatar: vote.avatar_url,
+                    count: 0
+                })
+            }
+            map.get(uid)!.count += 1
+        })
+
+        // Convert to array and sort by count (High to Low)
+        return Array.from(map.values()).sort((a, b) => b.count - a.count)
+    }, [allVotes, country.id])
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="glass w-full max-w-sm p-6 rounded-2xl border border-white/20 relative" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-white">Bookmakers</h2>
+                        <p className="text-xs text-gray-400">Shareholders for {country.name}</p>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition">✕</button>
+                </div>
+                
+                <div className="max-h-[60vh] overflow-y-auto space-y-3 no-scrollbar">
+                    {shareholders.length === 0 ? <p className="text-gray-500 text-center">No shares held yet.</p> : shareholders.map((s, i) => (
+                        <div key={i} className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
+                            <div className="flex items-center gap-3">
+                                {s.avatar ? <img src={s.avatar} className="w-8 h-8 rounded-full border border-white/20" /> : <div className="w-8 h-8 rounded-full bg-purple-900 flex items-center justify-center text-xs">👤</div>}
+                                <span className="font-bold text-sm text-gray-200">{s.username}</span>
+                            </div>
+                            <div className="text-right">
+                                <span className="block text-xl font-bold text-green-400">{s.count}</span>
+                                <span className="text-[9px] uppercase text-gray-500">Shares</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // --- POSTCARD EXPERIENCE MODAL ---
 function PostcardExperienceModal({ country, currentRating, user, onClose, onSaveRating, t }: { country: any, currentRating: any, user: User, onClose: () => void, onSaveRating: (r: any) => void, t: any }) {
     const supabase = createClient()
@@ -356,6 +410,9 @@ export default function Home() {
   const [activePostcard, setActivePostcard] = useState<any>(null) 
   const [viewRatingList, setViewRatingList] = useState<any>(null)
   
+  // NEW STATE for Shareholders Modal
+  const [viewShareholdersFor, setViewShareholdersFor] = useState<any>(null)
+  
   const MAX_TOKENS = 5
 
   useEffect(() => {
@@ -384,8 +441,11 @@ export default function Home() {
   async function refreshData() {
     const { data: cList } = await supabase.from('countries').select('*').order('name')
     if (cList) setCountries(cList)
+    
+    // UPDATED: Now also fetching 'username' and 'avatar_url' from votes table
     const { data: vList } = await supabase.from('votes').select('*')
     if (vList) setAllVotes(vList)
+    
     const { data: rList } = await supabase.from('ratings').select('*')
     if (rList) setAllRatings(rList) 
     const { data: { user } } = await supabase.auth.getUser()
@@ -419,15 +479,21 @@ export default function Home() {
     setIsVoting(true)
     try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#ec4899', '#a855f7', '#fbbf24'] })
-        const { error } = await supabase.from('votes').insert({ user_id: user.id, country_id: countryId })
+        
+        // NEW: Save username and avatar with vote
+        const { error } = await supabase.from('votes').insert({ 
+            user_id: user.id, 
+            country_id: countryId,
+            username: user.user_metadata.full_name,
+            avatar_url: user.user_metadata.avatar_url 
+        })
+        
         if (error) { toast.error("Failed to vote") } else { toast.success("Vote Placed!") }
         await refreshData()
     } catch (e) { toast.error("Something went wrong") } finally { setIsVoting(false) }
   }
 
-  // NOTE: removeVote is intentionally removed from UI to make votes permanent
   const removeVote = async (countryId: number) => {
-    // Left here just in case, but no UI triggers it
     if (isVoting) return
     const voteToRemove = myVotes.find(v => v.country_id === countryId)
     if (!voteToRemove) return
@@ -501,6 +567,15 @@ export default function Home() {
     return (
       <div className="min-h-screen p-2 md:p-8">
         
+        {/* NEW SHAREHOLDERS MODAL */}
+        {viewShareholdersFor && (
+            <ShareholdersModal 
+                country={viewShareholdersFor} 
+                allVotes={allVotes} 
+                onClose={() => setViewShareholdersFor(null)} 
+            />
+        )}
+
         {activePostcard && (
             <PostcardExperienceModal 
                 country={activePostcard} 
@@ -529,6 +604,7 @@ export default function Home() {
             <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
             <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
             <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+            
             <div className="absolute right-0 top-0 flex items-center gap-2">
                 <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition" title="How to Play">?</button>
                 <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
@@ -610,7 +686,15 @@ export default function Home() {
                       </div>
                       <div className="flex items-center gap-2">
                           <button onClick={() => setGraphCountry(country)} className="w-8 h-8 rounded-full bg-blue-600/50 hover:bg-blue-500 flex items-center justify-center transition border border-blue-400/50">📈</button>
-                          <div className="text-right glass p-1 md:p-2 rounded-lg"><span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span><span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span></div>
+                          {/* UPDATED: Clickable ODDS Box to show Shareholders */}
+                          <div 
+                              onClick={() => setViewShareholdersFor(country)}
+                              className="text-right glass p-1 md:p-2 rounded-lg cursor-pointer hover:bg-white/10 transition"
+                              title="View Bookmakers"
+                          >
+                              <span className={`block text-xl md:text-2xl font-bold ${isFavorite ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-green-400'}`}>{odds}</span>
+                              <span className="text-[10px] text-gray-400 uppercase block">{t.odds}</span>
+                          </div>
                       </div>
                     </div>
                     <p className={`font-bold text-sm mb-4 truncate flex items-center gap-2 ${videoId ? 'text-pink-400 hover:text-pink-200 cursor-pointer underline decoration-dotted' : 'opacity-70 text-gray-400 cursor-default'}`} onClick={() => videoId && setActivePostcard(country)} title={videoId ? "Click to Watch Video" : t.no_video}><span>♫ {country.song}</span>{videoId && <span className="text-[10px] md:text-xs bg-pink-900/50 px-1 rounded border border-pink-500/30">▶ {t.video}</span>}</p>
@@ -634,7 +718,7 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* NEW LAYOUT: SHARES DISPLAY + BUY BUTTON ONLY */}
+                    {/* SHARES DISPLAY + BUY BUTTON ONLY */}
                     <div className="flex items-center gap-3">
                         {/* SHARES BOX (Takes available space) */}
                         <div className="flex-1 bg-black/40 rounded-lg py-2 px-4 border border-white/10 flex justify-between items-center shadow-inner">
