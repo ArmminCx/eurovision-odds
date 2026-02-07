@@ -93,6 +93,7 @@ export const translations = {
     rank: "Rank",
     events: "Events",
     points: "Points",
+    col_tokens: "Tokens", // <--- NEW
     loading_scores: "Loading scores...",
     no_scores: "No points scored yet! Wait for results.",
     prize_message: "🏆 The player with the most points at the end of the season wins €100!",
@@ -128,7 +129,7 @@ export const translations = {
     open_external: "Watch on Official Site ↗",
     current_date: "Today is",
 
-    // --- EPICVISION PAGE (CUSTOM EVENT) ---
+    // --- EPICVISION PAGE ---
     ev_subtitle: "Official Community Event",
     ev_home: "🏠 Home",
     ev_watch: "📺 Watch Live",
@@ -136,8 +137,8 @@ export const translations = {
     // Tabs
     ev_tab_vote: "🗳️ Vote",
     ev_tab_predict: "🔮 Predictions",
-    ev_tab_results: "🏆 Results", // Admin/Host only
-    
+    ev_tab_results: "🏆 Results",
+
     // Predictions Game (New)
     ev_pred_tab_mine: "My Prediction",
     ev_pred_tab_feed: "Community Feed",
@@ -169,8 +170,8 @@ export const translations = {
     // Results
     ev_results_title: "Live Results",
     ev_total_votes: "Total Votes Cast",
-    
-    // Status
+
+    // Locking System
     ev_voting_closed: "⛔ VOTING CLOSED",
     ev_status_open: "🔓 Open Voting",
     ev_status_close: "🔒 Close Voting",
@@ -272,6 +273,7 @@ export const translations = {
     rank: "Место",
     events: "Турниры",
     points: "Очки",
+    col_tokens: "Жетоны", // <--- NEW
     loading_scores: "Загрузка очков...",
     no_scores: "Пока нет очков! Ждем результатов.",
     prize_message: "🏆 Игрок, набравший больше всех очков в конце сезона, получит 100€!",

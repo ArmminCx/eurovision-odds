@@ -3,12 +3,14 @@
 import { createClient } from '@/app/utils/supabase/client'
 import { useEffect, useState, useMemo } from 'react'
 import { User } from '@supabase/supabase-js'
-import { useLanguage } from '@/app/context/LanguageContext'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useLanguage } from '@/app/context/LanguageContext'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts'
+// NEW IMPORT
+import { Reorder } from "framer-motion"
 
 //⚠️ YOUR ADMIN ID
 const ADMIN_ID = 'f15ffc29-f012-4064-af7b-c84feb4d3320'
@@ -37,7 +39,7 @@ export default function PredictionsPage() {
   const [saved, setSaved] = useState(false)
   const [gradingMode, setGradingMode] = useState(false)
   
-  // NEW: Filter State
+  // Filter State
   const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
@@ -50,7 +52,6 @@ export default function PredictionsPage() {
   }, [])
 
   async function fetchFinals() {
-    // Sort by Date (Soonest first)
     const { data } = await supabase.from('national_finals').select('*').order('event_date', { ascending: true })
     if (data) setFinals(data)
   }
@@ -62,9 +63,7 @@ export default function PredictionsPage() {
 
     return finals.filter(f => {
         if (!f.event_date) return !showHistory
-        
         const eventDate = new Date(f.event_date)
-        
         if (showHistory) {
             return eventDate < today || f.status === 'closed'
         } else {
@@ -182,6 +181,18 @@ export default function PredictionsPage() {
   }
 
   // --- ACTIONS ---
+  
+  // NEW: DRAG HANDLER
+  const onReorder = (newOrder: any[]) => {
+      // Check Lock Status
+      if (selectedFinal?.status !== 'open' && user?.id !== ADMIN_ID) {
+          toast.error("Voting is locked!")
+          return
+      }
+      setParticipants(newOrder)
+      setSaved(false)
+  }
+
   const move = (index: number, direction: -1 | 1) => {
     const newItems = [...participants]; const target = index + direction
     if (target < 0 || target >= newItems.length) return
@@ -269,7 +280,7 @@ export default function PredictionsPage() {
         </div>
         <div className="md:hidden flex justify-end mb-4"><button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button></div>
 
-        {/* VIEW 1: LIST (With Filter and Dates) */}
+        {/* VIEW 1: LIST */}
         {view === 'LIST' && (
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">{t.select_final}</h1>
@@ -277,18 +288,8 @@ export default function PredictionsPage() {
             {/* FILTER TOGGLE */}
             <div className="flex justify-center mb-6">
                 <div className="bg-black/40 p-1 rounded-lg border border-white/10 flex">
-                    <button 
-                        onClick={() => setShowHistory(false)}
-                        className={`px-4 py-2 rounded-md font-bold text-sm transition ${!showHistory ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        {t.pred_filter_upcoming}
-                    </button>
-                    <button 
-                        onClick={() => setShowHistory(true)}
-                        className={`px-4 py-2 rounded-md font-bold text-sm transition ${showHistory ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        {t.pred_filter_history}
-                    </button>
+                    <button onClick={() => setShowHistory(false)} className={`px-4 py-2 rounded-md font-bold text-sm transition ${!showHistory ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>{t.pred_filter_upcoming}</button>
+                    <button onClick={() => setShowHistory(true)} className={`px-4 py-2 rounded-md font-bold text-sm transition ${showHistory ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>{t.pred_filter_history}</button>
                 </div>
             </div>
 
@@ -305,7 +306,6 @@ export default function PredictionsPage() {
                 if (status === 'open') { badgeColor = "bg-green-500 text-black"; badgeText = t.status_open }
                 else if (status === 'closed') { badgeColor = "bg-red-600 text-white"; badgeText = t.status_closed }
 
-                // Date Formatting
                 const eventDate = final.event_date ? new Date(final.event_date).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric' }) : 'TBA'
 
                 return (
@@ -316,14 +316,12 @@ export default function PredictionsPage() {
                         <span className="text-lg md:text-xl font-bold group-hover:text-pink-300 block">{final.name}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${badgeColor}`}>{badgeText}</span>
                       </div>
-                      <div className="flex gap-3 text-xs text-gray-400 mt-1">
-                          <span className="text-purple-300 font-bold">📅 {eventDate}</span>
-                          <span>🕒 {final.event_time}</span>
+                      <div className="text-xs text-gray-400 mt-1 flex gap-3">
+                         <span className="text-purple-300 font-bold">📅 {eventDate}</span>
+                         <span>🕒 {final.event_time}</span>
                       </div>
                     </div>
-                    
                     <button onClick={(e) => openStats(final, e)} className="w-10 h-10 rounded-full bg-blue-900/50 hover:bg-blue-600 text-blue-200 flex items-center justify-center transition z-20 border border-blue-700/50">📊</button>
-                    
                     {isAdmin && (
                       <div className="flex gap-2 ml-2">
                         <button onClick={(e) => handleCycleStatus(e, final.id, status)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold border bg-gray-700 hover:bg-gray-600">{status === 'open' ? '🔓' : status === 'locked' ? '🟠' : '🔒'}</button>
@@ -337,8 +335,7 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* ... (GAME, STATS, SPECTATE views - unchanged) ... */}
-        {/* Keeping the rest of the code as is for brevity, assume it is correctly appended below */}
+        {/* VIEW 2: GAME (DRAGGABLE) */}
         {view === 'GAME' && (
           <div>
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
@@ -353,25 +350,47 @@ export default function PredictionsPage() {
               )}
             </div>
             
-            <div className="space-y-3 pb-20">
-              {participants.map((p, index) => (
-                <div key={p.id} className="glass flex items-center gap-4 p-4 rounded-xl border border-white/10 hover:border-pink-500/30 transition">
-                  <div className="w-8 h-8 flex items-center justify-center font-bold text-gray-400">#{index+1}</div>
-                  <div className="flex-1 font-bold text-sm md:text-lg">{p.artist} <span className="font-normal text-gray-400 block md:inline md:ml-2 text-xs md:text-sm">{p.song}</span></div>
-                  {gradingMode ? (
-                    <input type="number" value={p.actual_rank || ''} onChange={(e) => handleUpdateResult(p.id, e.target.value)} className="w-10 bg-gray-700 text-center text-white rounded border border-gray-600 focus:border-yellow-500 outline-none" />
-                  ) : (
-                    <div className="flex flex-col gap-1">
-                      <button onClick={() => move(index, -1)} className="text-green-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={((selectedFinal?.status && selectedFinal?.status !== 'open') && user?.id !== ADMIN_ID)}>▲</button>
-                      <button onClick={() => move(index, 1)} className="text-red-400 hover:bg-gray-700 p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed" disabled={((selectedFinal?.status && selectedFinal?.status !== 'open') && user?.id !== ADMIN_ID)}>▼</button>
-                    </div>
-                  )}
+            {/* DRAGGABLE LIST */}
+            {gradingMode ? (
+                // Admin Results Mode (Stays as Inputs)
+                <div className="space-y-3 pb-20">
+                    {participants.map((p, index) => (
+                        <div key={p.id} className="glass flex items-center gap-4 p-4 rounded-xl border border-white/10">
+                            <div className="w-8 h-8 flex items-center justify-center font-bold text-gray-400">#{index+1}</div>
+                            <div className="flex-1 font-bold text-sm md:text-lg">{p.artist} <span className="font-normal text-gray-400 block md:inline md:ml-2 text-xs md:text-sm">{p.song}</span></div>
+                            <input type="number" value={p.actual_rank || ''} onChange={(e) => handleUpdateResult(p.id, e.target.value)} className="w-10 bg-gray-700 text-center text-white rounded border border-gray-600 focus:border-yellow-500 outline-none" />
+                        </div>
+                    ))}
                 </div>
-              ))}
-            </div>
+            ) : (
+                // User Game Mode (Draggable)
+                <Reorder.Group axis="y" values={participants} onReorder={onReorder} className="space-y-3 pb-20">
+                    {participants.map((p, index) => {
+                         const canDrag = selectedFinal?.status === 'open' || user?.id === ADMIN_ID
+                         return (
+                            <Reorder.Item key={p.id} value={p} dragListener={canDrag}>
+                                <div className={`glass flex items-center gap-4 p-4 rounded-xl border border-white/10 transition select-none ${canDrag ? 'cursor-grab active:cursor-grabbing hover:border-pink-500/30' : 'opacity-70 cursor-not-allowed'}`}>
+                                    <div className="w-8 h-8 flex items-center justify-center font-bold text-gray-400">#{index+1}</div>
+                                    <div className="flex-1 font-bold text-sm md:text-lg">{p.artist} <span className="font-normal text-gray-400 block md:inline md:ml-2 text-xs md:text-sm">{p.song}</span></div>
+                                    
+                                    {/* Show Arrows only if draggable (for accessibility/mobile fallback) */}
+                                    {canDrag && (
+                                        <div className="flex flex-col gap-1 border-l border-white/10 pl-3">
+                                            <button onPointerDown={(e) => {e.stopPropagation(); move(index, -1)}} className="text-green-400 hover:bg-white/10 p-1 rounded text-xs">▲</button>
+                                            <button onPointerDown={(e) => {e.stopPropagation(); move(index, 1)}} className="text-red-400 hover:bg-white/10 p-1 rounded text-xs">▼</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </Reorder.Item>
+                         )
+                    })}
+                </Reorder.Group>
+            )}
           </div>
         )}
 
+        {/* ... (STATS, SPECTATE views - unchanged) ... */}
+        {/* Make sure the closing brackets match the file I provided previously, cutting here for brevity as they are unchanged */}
         {view === 'STATS' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -398,7 +417,7 @@ export default function PredictionsPage() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
                                     <XAxis type="number" hide />
                                     <YAxis dataKey="name" type="category" width={100} tick={{ fill: '#aaa', fontSize: 10 }} />
-                                    <Tooltip
+                                    <Tooltip 
                                         cursor={{fill: 'transparent'}}
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length) {
@@ -466,7 +485,6 @@ export default function PredictionsPage() {
           </div>
         )}
 
-        {/* VIEW 4: SPECTATE */}
         {view === 'SPECTATE' && (
           <div>
             <div className="flex items-center justify-between mb-6 sticky top-0 bg-black/60 backdrop-blur-lg py-4 z-10 border-b border-white/20 px-2 rounded-xl">
