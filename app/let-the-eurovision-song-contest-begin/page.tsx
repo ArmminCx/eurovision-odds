@@ -375,7 +375,7 @@ export default function TransmissionPage() {
       {/* Video 1 */}
       <video
         ref={v1}
-        src="/videos/captures/video1.mp4"
+        src="https://lcphdyurnwmcusiedisq.supabase.co/storage/v1/object/public/videos/video1.mp4"
         playsInline
         preload="auto"
         onEnded={handleVideo1End}
@@ -392,7 +392,7 @@ export default function TransmissionPage() {
       {/* Video 2 — preloaded, hidden until v1 ends */}
       <video
         ref={v2}
-        src="/videos/captures/video2.mp4"
+        src="https://lcphdyurnwmcusiedisq.supabase.co/storage/v1/object/public/videos/video2.mp4"
         playsInline
         preload="auto"
         style={{

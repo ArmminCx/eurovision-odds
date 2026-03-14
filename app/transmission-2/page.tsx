@@ -834,7 +834,7 @@ export default function Transmission2Page() {
                 {showSecretSix && (
                   <video
                     ref={secretVidRef}
-                    src="/videos/captures/channel6secret.mp4"
+                    src="https://lcphdyurnwmcusiedisq.supabase.co/storage/v1/object/public/videos/channel6secret.mp4"
                     autoPlay
                     playsInline
                     muted={!isPowered || channel !== 6 || audioMuted}
