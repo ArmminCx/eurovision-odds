@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EURO PUZZLE // EUROIMBA.COM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #00ff88;
+      --gold: #ffd700;
+      --bg: #060608;
+      --card-bg: #0c0d12;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: #c8d0d8;
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(0,255,136,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* ── Scanlines ── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,.07) 2px, rgba(0,0,0,.07) 4px
+      );
+    }
+
+    /* ── Ambient glow orbs ── */
+    .orb {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(80px); opacity: .13;
+    }
+    .orb-tl { width: 380px; height: 380px; top: -120px; left: -120px; background: var(--green); }
+    .orb-br { width: 420px; height: 420px; bottom: -140px; right: -140px; background: var(--gold); }
+
+    /* ── Particles canvas ── */
+    #particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+    /* ── Corner brackets ── */
+    .bracket {
+      position: fixed; width: 36px; height: 36px; z-index: 2; pointer-events: none;
+    }
+    .bracket-tl { top: 14px; left: 14px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
+    .bracket-br { bottom: 14px; right: 14px; border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+
+    /* ── Layout wrapper ── */
+    .page { position: relative; z-index: 3; max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+    /* ══════════════════════════════════════
+       STATUS BAR
+    ══════════════════════════════════════ */
+    .status-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0 10px;
+      border-bottom: 1px solid rgba(0,255,136,.12);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; color: rgba(255,255,255,.4);
+      letter-spacing: .08em;
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(6,6,8,.92); backdrop-filter: blur(8px);
+    }
+    .status-left { display: flex; align-items: center; gap: 8px; }
+    .pulse-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #ff3b3b;
+      animation: pulse-dot 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,59,59,.6); }
+      50%      { opacity: .6; box-shadow: 0 0 0 5px rgba(255,59,59,0); }
+    }
+
+    .status-right { display: flex; align-items: center; gap: 14px; }
+    .signal-bars { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+    .signal-bars span {
+      display: block; width: 3px; background: var(--green); border-radius: 1px;
+    }
+    .signal-bars span:nth-child(1) { height: 4px; opacity: .5; }
+    .signal-bars span:nth-child(2) { height: 7px; opacity: .7; }
+    .signal-bars span:nth-child(3) { height: 10px; opacity: .9; }
+    .signal-bars span:nth-child(4) { height: 13px; }
+
+    /* Language toggle */
+    .lang-toggle { display: flex; align-items: center; gap: 4px; }
+    .lang-btn {
+      font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      padding: 2px 7px; border-radius: 3px; cursor: pointer; border: 1px solid transparent;
+      letter-spacing: .1em; transition: all .2s;
+      background: transparent; color: rgba(255,255,255,.25);
+    }
+    .lang-btn.active {
+      color: var(--green);
+      border-color: rgba(0,255,136,.5);
+      text-shadow: 0 0 8px var(--green);
+      box-shadow: 0 0 8px rgba(0,255,136,.15);
+    }
+
+    /* ══════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════ */
+    .header { text-align: center; padding: 54px 0 12px; }
+    .eyebrow {
+      font-family: 'Share Tech Mono', monospace; font-size: 12px;
+      color: rgba(255,255,255,.35); letter-spacing: .15em; margin-bottom: 20px;
+    }
+    .title-euro {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(100px, 22vw, 180px);
+      line-height: .9;
+      color: var(--green);
+      text-shadow: 0 0 30px rgba(0,255,136,.35), 0 0 80px rgba(0,255,136,.1);
+      letter-spacing: .04em;
+    }
+    .title-puzzle {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(100px, 22vw, 180px);
+      line-height: .9;
+      color: transparent;
+      -webkit-text-stroke: 2px rgba(255,255,255,.55);
+      letter-spacing: .04em;
+      animation: glitch 6s infinite;
+    }
+    @keyframes glitch {
+      0%,88%,100% { text-shadow: none; transform: none; -webkit-text-stroke: 2px rgba(255,255,255,.55); }
+      89%  { text-shadow: -4px 0 #ff0033, 4px 0 #00ffee; transform: skew(-1.5deg); }
+      90%  { text-shadow:  4px 0 #ff0033,-4px 0 #00ffee; transform: skew( 1.5deg); -webkit-text-stroke: 2px rgba(255,0,51,.7); }
+      91%  { text-shadow: -3px 0 #ff0033, 3px 0 #00ffee; transform: none; }
+      92%  { text-shadow: none; -webkit-text-stroke: 2px rgba(255,255,255,.55); }
+    }
+
+    /* ══════════════════════════════════════
+       FADE-IN SECTIONS
+    ══════════════════════════════════════ */
+    .section {
+      opacity: 0; transform: translateY(22px);
+      animation: fade-up .7s ease forwards;
+    }
+    .section:nth-child(1){ animation-delay:.1s }
+    .section:nth-child(2){ animation-delay:.25s }
+    .section:nth-child(3){ animation-delay:.4s }
+    .section:nth-child(4){ animation-delay:.55s }
+    .section:nth-child(5){ animation-delay:.7s }
+    .section:nth-child(6){ animation-delay:.85s }
+    .section:nth-child(7){ animation-delay:1s }
+    @keyframes fade-up {
+      to { opacity: 1; transform: none; }
+    }
+
+    /* ══════════════════════════════════════
+       LORE BOX
+    ══════════════════════════════════════ */
+    .lore-box {
+      margin: 52px 0 48px;
+      border-left: 3px solid var(--gold);
+      padding: 22px 26px;
+      background: rgba(255,215,0,.04);
+    }
+    .lore-label {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      color: var(--gold); letter-spacing: .18em; margin-bottom: 14px; opacity: .7;
+    }
+    .lore-text {
+      font-size: 14px; line-height: 1.9; color: rgba(255,255,255,.65);
+    }
+    .lore-text .hi { color: var(--gold); font-weight: 700; }
+
+    /* ══════════════════════════════════════
+       RULES SECTION
+    ══════════════════════════════════════ */
+    .rules-label {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      color: rgba(255,255,255,.3); letter-spacing: .18em; margin-bottom: 22px; text-align: center;
+    }
+    .rules-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media(max-width:600px){ .rules-grid{ grid-template-columns:1fr; } }
+    .rule-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 4px; padding: 24px 22px 22px;
+      position: relative; overflow: hidden;
+      transition: border-color .3s, transform .3s;
+    }
+    .rule-card:hover { border-color: rgba(0,255,136,.35); transform: translateY(-3px); }
+    .rule-card::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      transition: left .5s ease;
+    }
+    .rule-card:hover::before { left: 100%; }
+    .rule-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 68px; color: rgba(255,255,255,.04); line-height: 1;
+      position: absolute; top: 8px; right: 14px; user-select: none;
+    }
+    .rule-title {
+      font-family: 'Share Tech Mono', monospace; font-size: 13px;
+      color: var(--green); letter-spacing: .1em; margin-bottom: 10px;
+    }
+    .rule-desc {
+      font-size: 12px; line-height: 1.8; color: rgba(255,255,255,.5);
+    }
+
+    /* ══════════════════════════════════════
+       PRIZE BANNER
+    ══════════════════════════════════════ */
+    .prize-banner {
+      margin: 48px 0;
+      border-top: 2px solid var(--gold);
+      border-radius: 0 0 4px 4px;
+      background: rgba(255,215,0,.05);
+      padding: 26px 30px;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      flex-wrap: wrap;
+    }
+    .prize-left .prize-label {
+      font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      color: rgba(255,215,0,.55); letter-spacing: .18em; margin-bottom: 4px;
+    }
+    .prize-amount {
+      font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 1;
+      color: var(--gold);
+      text-shadow: 0 0 20px rgba(255,215,0,.4), 0 0 60px rgba(255,215,0,.12);
+    }
+    .prize-right {
+      max-width: 300px;
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      color: rgba(255,255,255,.3); line-height: 1.85; text-align: right;
+    }
+    @media(max-width:600px){ .prize-right{ text-align:left; } }
+
+    /* ══════════════════════════════════════
+       STARS ROW
+    ══════════════════════════════════════ */
+    .stars-row {
+      text-align: center; font-size: 18px; letter-spacing: 10px;
+      color: rgba(255,215,0,.45); margin: 40px 0 44px;
+    }
+    .stars-row span { animation: twinkle 2.5s ease-in-out infinite; }
+    .stars-row span:nth-child(odd)  { animation-delay: 0s; }
+    .stars-row span:nth-child(even) { animation-delay: 1.25s; }
+    @keyframes twinkle {
+      0%,100% { opacity:.4; text-shadow: none; }
+      50%      { opacity: 1; text-shadow: 0 0 10px var(--gold); }
+    }
+
+    /* ══════════════════════════════════════
+       START BUTTON
+    ══════════════════════════════════════ */
+    .start-wrap { text-align: center; margin: 10px 0 48px; }
+    .start-btn {
+      display: inline-block; position: relative; overflow: hidden;
+      font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: .2em;
+      color: var(--bg); background: var(--green);
+      padding: 18px 72px; border: none; border-radius: 3px; cursor: pointer;
+      transition: transform .25s, box-shadow .25s;
+      box-shadow: 0 0 24px rgba(0,255,136,.35), 0 0 60px rgba(0,255,136,.12);
+    }
+    .start-btn::after {
+      content: '';
+      position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+      transition: left .45s ease;
+    }
+    .start-btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 0 40px rgba(0,255,136,.6), 0 0 100px rgba(0,255,136,.2);
+    }
+    .start-btn:hover::after { left: 160%; }
+    .start-sub {
+      margin-top: 14px;
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      color: rgba(255,255,255,.2); letter-spacing: .12em;
+    }
+
+    /* ══════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════ */
+    .footer {
+      border-top: 1px solid rgba(255,255,255,.06); padding: 22px 0 10px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: .12em;
+    }
+    .footer-left  { color: var(--green); opacity: .6; }
+    .footer-right { color: rgba(255,255,255,.2); text-align: right; }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient orbs -->
+  <div class="orb orb-tl"></div>
+  <div class="orb orb-br"></div>
+
+  <!-- Corner brackets -->
+  <div class="bracket bracket-tl"></div>
+  <div class="bracket bracket-br"></div>
+
+  <!-- Particles -->
+  <canvas id="particles"></canvas>
+
+  <div class="page">
+
+    <!-- ══ STATUS BAR ══ -->
+    <div class="status-bar">
+      <div class="status-left">
+        <div class="pulse-dot"></div>
+        <span>EUROIMBA.COM / EURO_PUZZLE</span>
+      </div>
+      <div class="status-right">
+        <div class="signal-bars">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <span>SEASON_01</span>
+        <div class="lang-toggle">
+          <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" id="btn-ru" onclick="setLang('ru')">RU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HEADER ══ -->
+    <div class="header section">
+      <div class="eyebrow" data-key="eyebrow">// Classified Archive — Handle With Care</div>
+      <div class="title-euro">EURO</div>
+      <div class="title-puzzle">PUZZLE</div>
+    </div>
+
+    <!-- ══ LORE BOX ══ -->
+    <div class="lore-box section">
+      <div class="lore-label" data-key="lore_label">// Transmission — Origin Unknown</div>
+      <p class="lore-text" id="lore-text"></p>
+    </div>
+
+    <!-- ══ RULES ══ -->
+    <div class="section">
+      <div class="rules-label" data-key="rules_label">// Protocol — Read Before Proceeding</div>
+      <div class="rules-grid">
+        <div class="rule-card">
+          <div class="rule-num">01</div>
+          <div class="rule-title" data-key="r1_title">SEARCH EVERYWHERE</div>
+          <div class="rule-desc" data-key="r1_desc">Hidden letters are scattered across the entire website. No page is innocent. Look beyond the surface.</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">02</div>
+          <div class="rule-title" data-key="r2_title">DECODE THE ORDER</div>
+          <div class="rule-desc" data-key="r2_desc">Finding the letters is only half the job. Each one carries a position. Figure out the sequence.</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">03</div>
+          <div class="rule-title" data-key="r3_title">BUILD THE PATH</div>
+          <div class="rule-desc" data-key="r3_desc">The letters form a secret URL. You won't click it — you'll have to type it in. Manually. That's the point.</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-num">04</div>
+          <div class="rule-title" data-key="r4_title">FIRST ONE IN WINS</div>
+          <div class="rule-desc" data-key="r4_desc">Navigate to the secret page and submit. Timestamps are recorded. First correct entry takes everything.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PRIZE BANNER ══ -->
+    <div class="prize-banner section">
+      <div class="prize-left">
+        <div class="prize-label" data-key="prize_label">// Total Prize Pool</div>
+        <div class="prize-amount">$50</div>
+      </div>
+      <div class="prize-right" data-key="prize_desc">First correct submission wins. Timestamps are server-recorded. No extensions. No exceptions.</div>
+    </div>
+
+    <!-- ══ STARS ROW ══ -->
+    <div class="stars-row section" aria-hidden="true">
+      <span>★</span><span>✦</span><span>★</span><span>✦</span><span>★</span>
+      <span>✦</span><span>★</span><span>✦</span><span>★</span><span>✦</span>
+    </div>
+
+    <!-- ══ START BUTTON ══ -->
+    <div class="start-wrap section">
+      <button class="start-btn" data-key="start_btn">START</button>
+      <div class="start-sub" data-key="start_sub">— good luck, you'll need it —</div>
+    </div>
+
+    <!-- ══ FOOTER ══ -->
+    <div class="footer section">
+      <div class="footer-left">EUROIMBA.COM</div>
+      <div class="footer-right" data-key="footer_right">EURO_PUZZLE // SEASON 01 // ALL RIGHTS RESERVED</div>
+    </div>
+
+  </div><!-- /page -->
+
+  <script>
+    /* ══════════════════════════════
+       PARTICLES
+    ══════════════════════════════ */
+    (function() {
+      const canvas = document.getElementById('particles');
+      const ctx = canvas.getContext('2d');
+      let W, H, dots = [];
+      const N = 55;
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+
+      function makeDot() {
+        return {
+          x: Math.random() * W,
+          y: H + Math.random() * 60,
+          r: Math.random() * 1.5 + .4,
+          speed: Math.random() * .5 + .2,
+          opacity: Math.random() * .35 + .05,
+          drift: (Math.random() - .5) * .25
+        };
+      }
+
+      function init() {
+        resize();
+        dots = Array.from({ length: N }, () => {
+          const d = makeDot();
+          d.y = Math.random() * H; // scatter initially
+          return d;
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        dots.forEach(d => {
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0,255,136,${d.opacity})`;
+          ctx.fill();
+
+          d.y -= d.speed;
+          d.x += d.drift;
+
+          if (d.y < -10) {
+            Object.assign(d, makeDot());
+          }
+        });
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener('resize', resize);
+      init();
+      draw();
+    })();
+
+    /* ══════════════════════════════
+       LANGUAGE SYSTEM
+    ══════════════════════════════ */
+    const TRANSLATIONS = {
+      en: {
+        eyebrow:     '// Classified Archive — Handle With Care',
+        lore_label:  '// Transmission — Origin Unknown',
+        lore_text:   'The Eurovision Puzzle Archive has been locked since <span class="hi">2003</span>. Someone left the door open. What you find here was never meant to be public. The signals are scattered. <span class="hi">Find the path. Piece it together. Claim what\'s yours.</span>',
+        rules_label: '// Protocol — Read Before Proceeding',
+        r1_title:    'SEARCH EVERYWHERE',
+        r1_desc:     'Hidden letters are scattered across the entire website. No page is innocent. Look beyond the surface.',
+        r2_title:    'DECODE THE ORDER',
+        r2_desc:     'Finding the letters is only half the job. Each one carries a position. Figure out the sequence.',
+        r3_title:    'BUILD THE PATH',
+        r3_desc:     'The letters form a secret URL. You won\'t click it — you\'ll have to type it in. Manually. That\'s the point.',
+        r4_title:    'FIRST ONE IN WINS',
+        r4_desc:     'Navigate to the secret page and submit. Timestamps are recorded. First correct entry takes everything.',
+        prize_label: '// Total Prize Pool',
+        prize_desc:  'First correct submission wins. Timestamps are server-recorded. No extensions. No exceptions.',
+        start_btn:   'START',
+        start_sub:   '— good luck, you\'ll need it —',
+        footer_right:'EURO_PUZZLE // SEASON 01 // ALL RIGHTS RESERVED',
+      },
+      ru: {
+        eyebrow:     '// Закрытый архив — Обращаться с осторожностью',
+        lore_label:  '// Передача — Источник неизвестен',
+        lore_text:   'Архив Eurovision Puzzle закрыт с <span class="hi">2003</span> года. Кто-то оставил дверь открытой. То, что вы здесь найдёте, никогда не предназначалось для чужих глаз. Сигналы рассеяны. <span class="hi">Найди путь. Сложи картину. Возьми то, что тебе причитается.</span>',
+        rules_label: '// Протокол — Прочти перед началом',
+        r1_title:    'ИЩИ ВЕЗДЕ',
+        r1_desc:     'Скрытые буквы разбросаны по всему сайту. Ни одна страница не невинна. Смотри глубже.',
+        r2_title:    'РАЗГАДАЙ ПОРЯДОК',
+        r2_desc:     'Найти буквы — только половина дела. Каждая несёт в себе позицию. Определи последовательность.',
+        r3_title:    'ПОСТРОЙ ПУТЬ',
+        r3_desc:     'Буквы складываются в секретный URL. Кликать не придётся — нужно набрать его вручную. В этом весь смысл.',
+        r4_title:    'ПЕРВЫЙ ПОЛУЧАЕТ ВСЁ',
+        r4_desc:     'Перейди на секретную страницу и отправь запрос. Время фиксируется. Первый правильный ответ забирает всё.',
+        prize_label: '// Общий призовой фонд',
+        prize_desc:  'Побеждает первая правильная заявка. Время фиксируется на сервере. Никаких продлений. Никаких исключений.',
+        start_btn:   'СТАРТ',
+        start_sub:   '— удачи, она тебе понадобится —',
+        footer_right:'EURO_PUZZLE // SEASON 01 // ВСЕ ПРАВА ЗАЩИЩЕНЫ',
+      }
+    };
+
+    let currentLang = localStorage.getItem('ep_lang') || 'en';
+
+    function applyLang(lang) {
+      const T = TRANSLATIONS[lang];
+      // Static data-key elements
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.dataset.key;
+        if (T[key] !== undefined) el.textContent = T[key];
+      });
+      // Lore text needs innerHTML for highlights
+      document.getElementById('lore-text').innerHTML = T.lore_text;
+      // Toggle button states
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('ep_lang', lang);
+      applyLang(lang);
+    }
+
+    // Init on load
+    applyLang(currentLang);
+  </script>
+</body>
+</html>
