@@ -2,7 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/client'
 import { useEffect, useState, useRef } from 'react'
-import { usePathname } from 'next/navigation' 
+import { usePathname } from 'next/navigation'
 
 type TickerItem = {
   id: number
@@ -12,10 +12,10 @@ type TickerItem = {
 export default function ActivityTicker() {
   const pathname = usePathname()
   const supabase = createClient()
-  
+
   const [items, setItems] = useState<TickerItem[]>([])
-  const [countries, setCountries] = useState<any[]>([]) 
-  
+  const [countries, setCountries] = useState<any[]>([])
+
   const queueRef = useRef<string[]>([])
   const isProcessingRef = useRef(false)
   const hasInited = useRef(false)
@@ -25,8 +25,8 @@ export default function ActivityTicker() {
   // 1. FETCH COUNTRIES ON MOUNT
   useEffect(() => {
     async function getCountries() {
-        const { data } = await supabase.from('countries').select('id, name')
-        if (data) setCountries(data)
+      const { data } = await supabase.from('countries').select('id, name')
+      if (data) setCountries(data)
     }
     getCountries()
   }, [])
@@ -64,7 +64,7 @@ export default function ActivityTicker() {
         setItems(prev => prev.filter(i => i.id !== newItem.id))
       }, 16000) // 16s lifetime
     } else {
-        isProcessingRef.current = false
+      isProcessingRef.current = false
     }
   }
 
@@ -74,7 +74,7 @@ export default function ActivityTicker() {
 
     const getCountryName = (id: number) => countries.find(x => x.id === id)?.name || "a country"
     const channel = supabase.channel('ticker_feed')
-      
+
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, (payload) => {
         const countryName = getCountryName(payload.new.country_id)
         addToQueue(`🔥 Someone just bet on ${countryName}!`)
@@ -107,18 +107,18 @@ export default function ActivityTicker() {
         const eventDate = new Date(event.event_date)
         const isToday = eventDate.toDateString() === now.toDateString()
         if (isToday) {
-           let hoursUntil = 0
-           if (event.event_time && event.event_time.includes(':')) {
-             const [hours] = event.event_time.split(':')
-             const eventHour = parseInt(hours)
-             const currentHour = now.getHours()
-             hoursUntil = eventHour - currentHour
-           }
-           if (hoursUntil > 0 && hoursUntil <= 4) {
-             addToQueue(`⚠️ ${event.name} starts in ${hoursUntil} hours!`)
-           } else if (hoursUntil <= 0 && hoursUntil > -4) {
-             addToQueue(`🔴 ${event.name} is LIVE NOW!`)
-           }
+          let hoursUntil = 0
+          if (event.event_time && event.event_time.includes(':')) {
+            const [hours] = event.event_time.split(':')
+            const eventHour = parseInt(hours)
+            const currentHour = now.getHours()
+            hoursUntil = eventHour - currentHour
+          }
+          if (hoursUntil > 0 && hoursUntil <= 4) {
+            addToQueue(`⚠️ ${event.name} starts in ${hoursUntil} hours!`)
+          } else if (hoursUntil <= 0 && hoursUntil > -4) {
+            addToQueue(`🔴 ${event.name} is LIVE NOW!`)
+          }
         }
       })
     }
@@ -127,8 +127,8 @@ export default function ActivityTicker() {
   }, [])
 
   // --- 5. CONDITIONAL RENDER (Must be AFTER all hooks) ---
-  if (pathname?.startsWith('/epicvision')) {
-      return null
+  if (pathname?.startsWith('/epicvision') || pathname?.startsWith('/euro-puzzle') || pathname?.startsWith('/eurovision') || pathname?.startsWith('/let-the-eurovision-song-contest-begin') || pathname?.startsWith('/transmission-2') || pathname?.startsWith('/transmission-3')) {
+    return null
   }
 
   return (
@@ -136,7 +136,7 @@ export default function ActivityTicker() {
       <div className="relative w-full h-full">
         {items.map((item) => (
           <div key={item.id} className="animate-fly top-1.5 flex items-center gap-2">
-            <span className="text-pink-500 text-lg">•</span> 
+            <span className="text-pink-500 text-lg">•</span>
             <span className="text-xs font-mono font-bold text-gray-200">{item.text}</span>
           </div>
         ))}

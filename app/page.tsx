@@ -756,22 +756,18 @@ export default function Home() {
 
         <div className="max-w-6xl mx-auto">
 
-          <div className="relative flex justify-center gap-4 md:gap-6 mb-8 border-b border-white/20 pb-4 flex-wrap">
-            <Link href="/" className="px-4 py-2 text-white border-b-2 border-pink-500 font-bold text-lg md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
-            <Link href="/epicstory" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-5 h-5 md:w-6 md:h-6 object-contain" />{t.nav_stream}</Link>
-            <Link href="/tv" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_tv}</Link>
-            <Link href="/calendar" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
-            <Link href="/predictions" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
-            <Link href="/leaderboard" className="px-4 py-2 text-gray-300 hover:text-white font-bold text-lg md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+          <div className="flex justify-center items-center gap-2 md:gap-4 mb-8 border-b border-white/20 pb-4 flex-wrap">
+            <Link href="/" className="px-3 py-2 text-white border-b-2 border-pink-500 font-bold text-base md:text-xl drop-shadow-[0_0_10px_rgba(236,72,153,0.8)] transition">{t.nav_betting}</Link>
+            <Link href="/epicstory" className="px-3 py-2 text-gray-300 hover:text-white font-bold text-base md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-1"><Image src="/twitch.png" alt="Twitch" width={24} height={24} className="w-4 h-4 md:w-5 md:h-5 object-contain" />{t.nav_stream}</Link>
 
-            <div className="absolute right-0 top-0 flex items-center gap-2">
+            <Link href="/calendar" className="px-3 py-2 text-gray-300 hover:text-white font-bold text-base md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_calendar}</Link>
+            <Link href="/predictions" className="px-3 py-2 text-gray-300 hover:text-white font-bold text-base md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_predict}</Link>
+            <Link href="/leaderboard" className="px-3 py-2 text-gray-300 hover:text-white font-bold text-base md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{t.nav_leaderboard}</Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/euro-puzzle" className="px-3 py-2 text-yellow-300 hover:text-yellow-100 font-bold text-base md:text-xl transition hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">Euro Puzzle</Link>
               <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300 transition" title="How to Play">?</button>
               <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-xl px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
             </div>
-          </div>
-          <div className="md:hidden flex justify-end mb-4 gap-2">
-            <button onClick={() => setShowRules(true)} className="glass hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-purple-300">?</button>
-            <button onClick={toggleLanguage} className="glass hover:bg-white/10 text-sm px-3 py-1 rounded-full transition">{lang === 'en' ? '🇺🇸' : '🇷🇺'}</button>
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 border-b border-white/20 pb-6 sticky top-0 bg-black/70 backdrop-blur-xl z-20 py-4 md:py-6 rounded-2xl px-6 min-h-[140px] shadow-2xl">
